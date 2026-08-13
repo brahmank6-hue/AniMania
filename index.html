@@ -1,0 +1,2903 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AniMania — Random Anime TV</title>
+<meta name="description" content="Press the dial and tune in to a random anime, styled like a late-night CRT television.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: oklch(13% 0.012 240);
+    --panel: oklch(20% 0.014 240);
+    --panel-2: oklch(23% 0.016 240);
+    --screen: oklch(9% 0.012 240);
+    --accent: oklch(65% 0.19 12);
+    --accent-dim: oklch(40% 0.15 12);
+    --gold: oklch(70% 0.13 195);
+    --glow: oklch(65% 0.19 12 / 0.55);
+    --muted: oklch(65% 0.012 240);
+    --text: oklch(97% 0.004 240);
+    --label: "LATE NIGHT BLOCK";
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--ink);
+    color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+    transition: background-color 0.15s ease;
+  }
+
+  .page {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 16px 80px;
+  }
+
+  .eyebrow {
+    font-family: 'Space Grotesk', sans-serif;
+    letter-spacing: 0.35em;
+    font-size: 0.8rem;
+    color: var(--accent);
+    margin: 0 0 6px;
+    transition: color 0.15s ease;
+    background: none;
+    border: none;
+    padding: 4px 2px;
+    cursor: default;
+  }
+
+  .eyebrow:not(:disabled) {
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+
+  .eyebrow:not(:disabled):hover {
+    color: var(--gold);
+  }
+
+  /* ---------- Category nav ---------- */
+  .category-nav {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 28px;
+    max-width: 720px;
+  }
+
+  .nav-label {
+    font-family: 'Space Grotesk', sans-serif;
+    letter-spacing: 0.2em;
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin: -14px 0 10px;
+  }
+
+  .genre-nav .nav-link {
+    font-size: 0.76rem;
+    padding: 6px 12px;
+  }
+
+  .nav-link {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--muted);
+    text-decoration: none;
+    padding: 7px 14px;
+    border-radius: 999px;
+    border: 0.5px solid rgba(255, 255, 255, 0.1);
+    background: rgba(120, 120, 128, 0.14);
+    backdrop-filter: blur(8px) saturate(180%);
+    -webkit-backdrop-filter: blur(8px) saturate(180%);
+    transition: color 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+  }
+
+  .nav-link:hover, .nav-link:focus-visible {
+    color: var(--text);
+    border-color: var(--accent-dim);
+  }
+
+  .nav-link.active {
+    color: #0a0a0a;
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* ---------- Search bar ---------- */
+  .search-bar {
+    position: relative;
+    display: flex;
+    width: min(420px, 100%);
+    margin: 4px 0 20px;
+    gap: 8px;
+  }
+
+  .search-suggestions {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 42px;
+    background: var(--panel-2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);
+    z-index: 20;
+  }
+
+  .search-suggestion {
+    display: block;
+    padding: 9px 14px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text);
+    text-decoration: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .search-suggestion:last-child {
+    border-bottom: none;
+  }
+
+  .search-suggestion:hover, .search-suggestion:focus-visible {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--accent);
+  }
+
+  .search-input {
+    flex: 1;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.9rem;
+    color: var(--text);
+    background: rgba(120, 120, 128, 0.28);
+    backdrop-filter: blur(12px) saturate(180%);
+    -webkit-backdrop-filter: blur(12px) saturate(180%);
+    border: 0.5px solid rgba(255, 255, 255, 0.15);
+    box-shadow: inset 1.5px 1.5px 1px rgba(255, 255, 255, 0.15), inset -1px -1px 1px rgba(255, 255, 255, 0.08);
+    border-radius: 999px;
+    padding: 10px 16px;
+  }
+
+  .search-input::placeholder {
+    color: var(--muted);
+  }
+
+  .search-input:focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 2px;
+  }
+
+  .search-btn {
+    font-size: 1rem;
+    width: 42px;
+    border-radius: 999px;
+    border: 1px solid var(--accent-dim);
+    background: var(--accent);
+    color: #0a0a0a;
+    cursor: pointer;
+    transition: transform 0.12s ease;
+  }
+
+  .search-btn:hover, .search-btn:focus-visible {
+    transform: translateY(-1px);
+  }
+
+  /* ---------- MyAnimeList account ---------- */
+  .mal-auth {
+    margin-bottom: 4px;
+  }
+
+  .mal-connected-badge[hidden] {
+    display: none;
+  }
+
+  .mal-connected-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--gold);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 999px;
+    padding: 7px 8px 7px 14px;
+  }
+
+  .mal-disconnect-btn {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text);
+    font-size: 0.85rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .mal-disconnect-btn:hover, .mal-disconnect-btn:focus-visible {
+    background: rgba(255, 255, 255, 0.16);
+  }
+
+  .mal-sync-status {
+    margin: 6px 0 0;
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+
+  .site-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: clamp(2.6rem, 7vw, 4.2rem);
+    letter-spacing: 0.04em;
+    margin: 0;
+    line-height: 1;
+  }
+
+  .site-sub {
+    color: var(--muted);
+    margin: 6px 0 32px;
+    font-size: 0.95rem;
+  }
+
+  /* ---------- TV chassis ---------- */
+  .tv {
+    position: relative;
+    width: min(720px, 100%);
+    background: linear-gradient(160deg, var(--panel), var(--panel-2));
+    border-radius: 28px;
+    padding: 22px;
+    box-shadow:
+      0 30px 60px -20px rgba(0, 0, 0, 0.7),
+      inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    transition: background 0.15s ease;
+  }
+
+  .tv::before {
+    /* antenna */
+    content: "";
+    position: absolute;
+    top: -34px;
+    left: 34%;
+    width: 3px;
+    height: 44px;
+    background: var(--muted);
+    transform: rotate(-18deg);
+    transform-origin: bottom center;
+    border-radius: 2px;
+  }
+
+  .tv::after {
+    content: "";
+    position: absolute;
+    top: -34px;
+    right: 34%;
+    width: 3px;
+    height: 44px;
+    background: var(--muted);
+    transform: rotate(18deg);
+    transform-origin: bottom center;
+    border-radius: 2px;
+  }
+
+  .screen {
+    position: relative;
+    background: var(--screen);
+    border-radius: 16px;
+    overflow: hidden;
+    min-height: 420px;
+    box-shadow: inset 0 0 0 6px rgba(0, 0, 0, 0.55);
+  }
+
+  .scanlines {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.05) 0px,
+      rgba(255, 255, 255, 0.05) 1px,
+      transparent 2px,
+      transparent 4px
+    );
+    z-index: 5;
+  }
+
+  .vignette {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    box-shadow: inset 0 0 120px 40px rgba(0, 0, 0, 0.8);
+    z-index: 4;
+  }
+
+  .channel-tag {
+    position: absolute;
+    top: 14px;
+    left: 18px;
+    font-family: 'Space Grotesk', sans-serif;
+    letter-spacing: 0.08em;
+    font-size: 1rem;
+    color: var(--gold);
+    text-shadow: 0 0 8px rgba(255, 210, 63, 0.6);
+    z-index: 6;
+  }
+
+  .on-air {
+    position: absolute;
+    top: 14px;
+    right: 18px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'Space Grotesk', sans-serif;
+    letter-spacing: 0.1em;
+    font-size: 0.85rem;
+    color: var(--muted);
+    opacity: 0.25;
+    z-index: 6;
+    transition: opacity 0.2s ease, color 0.15s ease;
+  }
+
+  .on-air.live {
+    color: var(--accent);
+    opacity: 1;
+  }
+
+  .on-air-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .on-air.live .on-air-dot {
+    animation: blink 1.4s steps(1) infinite;
+  }
+
+  @keyframes blink {
+    50% { opacity: 0.15; }
+  }
+
+  .static-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    background-image: conic-gradient(
+      from 0deg,
+      #fff 0deg 6deg,
+      #000 6deg 12deg,
+      #888 12deg 18deg,
+      #fff 18deg 24deg,
+      #000 24deg 30deg,
+      #ccc 30deg 36deg
+    );
+    background-size: 3px 3px;
+    opacity: 0;
+    pointer-events: none;
+    animation: none;
+  }
+
+  .screen.tuning .static-overlay {
+    opacity: 0.85;
+    animation: staticFlicker 0.08s steps(2) infinite;
+  }
+
+  @keyframes staticFlicker {
+    0% { transform: translate(0, 0); }
+    50% { transform: translate(-2px, 1px); }
+    100% { transform: translate(2px, -1px); }
+  }
+
+  .screen-content {
+    position: relative;
+    z-index: 2;
+    min-height: 420px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .screen.tuning .screen-content > * {
+    visibility: hidden;
+  }
+
+  /* ---------- Idle state ---------- */
+  .idle-state {
+    text-align: center;
+    padding: 60px 24px;
+  }
+
+  .idle-glitch {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 2.2rem;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    margin: 0 0 10px;
+  }
+
+  .idle-hint {
+    color: var(--muted);
+    font-size: 0.9rem;
+    margin: 0;
+  }
+
+  /* ---------- Result ---------- */
+  .result {
+    padding: 56px 24px 24px;
+  }
+
+  .result-grid[hidden] {
+    display: none;
+  }
+
+  .result-grid {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    gap: 20px;
+  }
+
+  @media (max-width: 520px) {
+    .result-grid {
+      grid-template-columns: 1fr;
+      justify-items: center;
+      text-align: center;
+    }
+  }
+
+  .poster {
+    width: 100%;
+    max-width: 140px;
+    aspect-ratio: 2 / 3;
+    object-fit: cover;
+    border-radius: 8px;
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.5);
+    background: var(--panel-2);
+  }
+
+  .title-jp {
+    margin: 0 0 2px;
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+
+  .title-main {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: clamp(1.6rem, 4vw, 2.2rem);
+    letter-spacing: 0.02em;
+    margin: 0 0 8px;
+    line-height: 1.05;
+    color: var(--text);
+  }
+
+  .meta-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+    font-size: 0.9rem;
+  }
+
+  .score {
+    color: var(--gold);
+    font-weight: 600;
+  }
+
+  .meta-text {
+    color: var(--muted);
+  }
+
+  .genre-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+
+  .genre-pill {
+    font-size: 0.75rem;
+    padding: 3px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--accent-dim);
+    color: var(--accent);
+    background: rgba(255, 255, 255, 0.03);
+  }
+
+  .synopsis {
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: var(--text);
+    opacity: 0.85;
+    margin: 0 0 16px;
+  }
+
+  .watch-block {
+    margin-bottom: 16px;
+  }
+
+  .watch-label {
+    font-family: 'Space Grotesk', sans-serif;
+    letter-spacing: 0.08em;
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin: 0 0 6px;
+  }
+
+  .watch-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .pill-link {
+    font-size: 0.8rem;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: var(--accent);
+    color: #0a0a0a;
+    text-decoration: none;
+    font-weight: 600;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+    display: inline-block;
+  }
+
+  .pill-link:hover, .pill-link:focus-visible {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 14px var(--glow);
+  }
+
+  .save-btn {
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding: 9px 16px;
+    border-radius: 10px;
+    border: 1px solid var(--accent-dim);
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+    transition: transform 0.12s ease, background 0.12s ease;
+  }
+
+  .save-btn:hover, .save-btn:focus-visible {
+    transform: translateY(-1px);
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .save-btn.saved {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #0a0a0a;
+  }
+
+  .save-btn.seen {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: #0a0a0a;
+  }
+
+  .action-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  /* ---------- Error state ---------- */
+  .error-state {
+    text-align: center;
+    padding: 60px 24px;
+  }
+
+  .error-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.8rem;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    margin: 0 0 8px;
+  }
+
+  .error-message {
+    color: var(--muted);
+    font-size: 0.9rem;
+    max-width: 420px;
+    margin: 0 auto;
+  }
+
+  /* ---------- Controls ---------- */
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    margin-top: 28px;
+  }
+
+  .knob {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #555, #1a1a1a 70%);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.5), inset 0 0 0 2px rgba(255, 255, 255, 0.08);
+  }
+
+  .dial-btn {
+    font-family: 'Space Grotesk', sans-serif;
+    letter-spacing: 0.08em;
+    font-size: 1.2rem;
+    padding: 16px 36px;
+    border-radius: 999px;
+    border: none;
+    background: linear-gradient(160deg, var(--accent), var(--accent-dim));
+    color: #fff;
+    cursor: pointer;
+    box-shadow: 0 10px 20px var(--glow), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.15s ease;
+  }
+
+  .dial-btn:hover:not(:disabled), .dial-btn:focus-visible {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 26px var(--glow), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  }
+
+  .dial-btn:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  .dial-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  /* ---------- Browse view ---------- */
+  .browse-view {
+    width: min(960px, 100%);
+    margin-top: 8px;
+  }
+
+  .browse-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+
+  .back-link {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--muted);
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 999px;
+    padding: 6px 14px;
+    cursor: pointer;
+    transition: color 0.12s ease, border-color 0.12s ease;
+  }
+
+  .back-link:hover, .back-link:focus-visible {
+    color: var(--text);
+    border-color: var(--accent-dim);
+  }
+
+  .browse-title {
+    font-family: 'Space Grotesk', sans-serif;
+    letter-spacing: 0.06em;
+    font-size: 1.8rem;
+    color: var(--text);
+    margin: 0;
+    flex: 1;
+  }
+
+  .random-pick-btn {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #0a0a0a;
+    background: var(--accent);
+    border: none;
+    border-radius: 999px;
+    padding: 9px 18px;
+    cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+  }
+
+  .random-pick-btn:hover:not(:disabled), .random-pick-btn:focus-visible {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 16px var(--glow);
+  }
+
+  .random-pick-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .browse-status {
+    color: var(--muted);
+    font-size: 0.9rem;
+    margin: 0 0 16px;
+  }
+
+  /* ---------- Spotlight (random pick) card ---------- */
+  .spotlight-card {
+    position: relative;
+    background: var(--panel-2);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
+  }
+
+  .spotlight-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text);
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .spotlight-close:hover, .spotlight-close:focus-visible {
+    background: rgba(255, 255, 255, 0.16);
+  }
+
+  .spotlight-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .browse-grid[hidden] {
+    display: none;
+  }
+
+  .browse-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .browse-card {
+    background: var(--panel-2);
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
+  }
+
+  .browse-card-poster {
+    width: 100%;
+    aspect-ratio: 2 / 3;
+    object-fit: cover;
+    background: var(--panel);
+    display: block;
+  }
+
+  .browse-card-body {
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+  }
+
+  .browse-card-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text);
+    text-decoration: none;
+    line-height: 1.25;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .browse-card-title:hover, .browse-card-title:focus-visible {
+    color: var(--accent);
+  }
+
+  .browse-card-meta {
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+
+  .browse-card-genres {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .browse-card-genres .genre-pill {
+    font-size: 0.65rem;
+    padding: 2px 8px;
+  }
+
+  .browse-card-save {
+    margin-top: auto;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--accent-dim);
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+    transition: background 0.12s ease;
+  }
+
+  .browse-card-save.saved {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #0a0a0a;
+  }
+
+  .browse-card-save.seen {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: #0a0a0a;
+  }
+
+  .browse-card-actions {
+    margin-top: auto;
+    display: flex;
+    gap: 6px;
+  }
+
+  .browse-card-actions .browse-card-save {
+    margin-top: 0;
+    flex: 1;
+  }
+
+  .load-more-btn[hidden] {
+    display: none;
+  }
+
+  .load-more-btn {
+    display: block;
+    margin: 0 auto;
+    font-family: 'Space Grotesk', sans-serif;
+    letter-spacing: 0.06em;
+    font-size: 1rem;
+    padding: 10px 26px;
+    border-radius: 999px;
+    border: 1px solid var(--accent-dim);
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+    transition: background 0.12s ease, transform 0.12s ease;
+  }
+
+  .load-more-btn:hover:not(:disabled), .load-more-btn:focus-visible {
+    background: rgba(255, 255, 255, 0.06);
+    transform: translateY(-1px);
+  }
+
+  .load-more-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* ---------- Watchlist shelf ---------- */
+  .watchlist-shelf {
+    width: min(720px, 100%);
+    margin-top: 48px;
+  }
+
+  .shelf-title {
+    font-family: 'Space Grotesk', sans-serif;
+    letter-spacing: 0.08em;
+    font-size: 1.3rem;
+    margin: 0 0 14px;
+    color: var(--muted);
+  }
+
+  .tape-row[hidden] {
+    display: none;
+  }
+
+  .tape-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .tape-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--panel-2);
+    border-radius: 10px;
+    padding: 8px 10px 8px 8px;
+    width: 220px;
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
+  }
+
+  .tape-thumb {
+    width: 40px;
+    height: 56px;
+    object-fit: cover;
+    border-radius: 4px;
+    flex-shrink: 0;
+    background: var(--panel);
+  }
+
+  .tape-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .tape-title {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text);
+    text-decoration: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .tape-title:hover, .tape-title:focus-visible {
+    text-decoration: underline;
+  }
+
+  .tape-remove {
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    font-size: 1rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 4px 6px;
+    border-radius: 6px;
+    flex-shrink: 0;
+  }
+
+  .tape-remove:hover, .tape-remove:focus-visible {
+    color: var(--accent);
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  .shelf-empty {
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+
+  :is(a, button):focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .on-air.live .on-air-dot {
+      animation: none;
+    }
+    .screen.tuning .static-overlay {
+      animation: none;
+      opacity: 0.5;
+    }
+    .dial-btn, .save-btn, .pill-link {
+      transition: none;
+    }
+  }
+</style>
+</head>
+<body>
+  <div class="page">
+    <button class="eyebrow" id="eyebrow" type="button" disabled>LATE NIGHT BLOCK</button>
+    <h1 class="site-title">AniMania</h1>
+    <p class="site-sub">Random anime, tuned in live.</p>
+
+    <div class="mal-auth" id="malAuth">
+      <button class="nav-link" id="malConnectBtn" type="button">🔗 Connect MyAnimeList</button>
+      <span class="mal-connected-badge" id="malConnectedBadge" hidden>
+        ✓ MyAnimeList Connected
+        <button class="mal-disconnect-btn" id="malDisconnectBtn" type="button" aria-label="Disconnect MyAnimeList">×</button>
+      </span>
+      <p class="mal-sync-status" id="malSyncStatus" hidden></p>
+    </div>
+
+    <form class="search-bar" id="searchForm" role="search">
+      <label for="searchInput" class="sr-only">Search anime by title, plot, or genre</label>
+      <input
+        type="search"
+        id="searchInput"
+        class="search-input"
+        placeholder="Search by title, plot, or genre (e.g. 'horror')…"
+        autocomplete="off"
+        role="combobox"
+        aria-expanded="false"
+        aria-controls="searchSuggestions"
+        aria-autocomplete="list"
+      >
+      <button type="submit" class="search-btn" aria-label="Search">🔍</button>
+      <div class="search-suggestions" id="searchSuggestions" role="listbox" hidden></div>
+    </form>
+
+    <nav class="category-nav" id="categoryNav" aria-label="Browse categories">
+      <a class="nav-link" href="#/" data-route="home">🔀 Random</a>
+      <a class="nav-link" href="#/category/movies" data-route="category/movies">🎬 Movies</a>
+      <a class="nav-link" href="#/category/short" data-route="category/short">⏱ Short Watches</a>
+      <a class="nav-link" href="#/category/shonen" data-route="category/shonen">🥋 Shonen</a>
+      <a class="nav-link" href="#/category/family" data-route="category/family">👪 Family-Friendly</a>
+      <a class="nav-link" href="#/category/top-rated" data-route="category/top-rated">🏆 Top Rated</a>
+      <a class="nav-link" href="#/genres" data-route="genres">🎭 Genres &amp; Moods</a>
+      <a class="nav-link" href="#/seen" data-route="seen">👁 Already Seen</a>
+    </nav>
+
+    <section class="browse-view" id="genreHubView" hidden>
+      <div class="browse-header">
+        <button class="back-link" id="genreHubBack" type="button">← Back</button>
+        <h2 class="browse-title">Genres &amp; Moods</h2>
+      </div>
+
+      <p class="nav-label">Mood</p>
+      <nav class="category-nav genre-nav" aria-label="Browse by mood">
+        <a class="nav-link" href="#/category/nothing-sad" data-route="category/nothing-sad">😌 Nothing Sad</a>
+        <a class="nav-link" href="#/category/peak-feels" data-route="category/peak-feels">😭 Peak Feels</a>
+        <a class="nav-link" href="#/category/comfort-watch" data-route="category/comfort-watch">🛋️ Comfort Watch</a>
+        <a class="nav-link" href="#/category/brain-off" data-route="category/brain-off">🎉 Brain Off</a>
+      </nav>
+
+      <p class="nav-label">Genre</p>
+      <nav class="category-nav genre-nav" aria-label="Browse by genre">
+        <a class="nav-link" href="#/genre/Action" data-route="genre/Action">⚔️ Action</a>
+        <a class="nav-link" href="#/genre/Adventure" data-route="genre/Adventure">🗺️ Adventure</a>
+        <a class="nav-link" href="#/genre/Comedy" data-route="genre/Comedy">😂 Comedy</a>
+        <a class="nav-link" href="#/genre/Drama" data-route="genre/Drama">🎭 Drama</a>
+        <a class="nav-link" href="#/genre/Fantasy" data-route="genre/Fantasy">🐉 Fantasy</a>
+        <a class="nav-link" href="#/genre/Horror" data-route="genre/Horror">👻 Horror</a>
+        <a class="nav-link" href="#/genre/Mahou%20Shoujo" data-route="genre/Mahou%20Shoujo">✨ Magical Girl</a>
+        <a class="nav-link" href="#/genre/Music" data-route="genre/Music">🎵 Music</a>
+        <a class="nav-link" href="#/genre/Mystery" data-route="genre/Mystery">🕵️ Mystery</a>
+        <a class="nav-link" href="#/genre/Romance" data-route="genre/Romance">💕 Romance</a>
+        <a class="nav-link" href="#/genre/Sci-Fi" data-route="genre/Sci-Fi">🚀 Sci-Fi</a>
+        <a class="nav-link" href="#/genre/Sports" data-route="genre/Sports">⚽ Sports</a>
+        <a class="nav-link" href="#/genre/Supernatural" data-route="genre/Supernatural">🌙 Supernatural</a>
+      </nav>
+    </section>
+
+    <div class="home-view" id="homeView">
+    <div class="tv" id="tv">
+      <div class="screen" id="screen">
+        <div class="scanlines" aria-hidden="true"></div>
+        <div class="vignette" aria-hidden="true"></div>
+        <div class="channel-tag" id="channelTag">CH. 00</div>
+        <div class="on-air" id="onAir"><span class="on-air-dot" aria-hidden="true"></span>ON AIR</div>
+        <div class="static-overlay" id="staticOverlay" aria-hidden="true"></div>
+
+        <div class="screen-content" id="screenContent">
+          <div class="idle-state" id="idleState">
+            <p class="idle-glitch">NO SIGNAL</p>
+            <p class="idle-hint">Press "Surprise Me" to tune in to something random.</p>
+          </div>
+
+          <div class="result" id="result" hidden>
+            <div class="result-grid">
+              <img class="poster" id="poster" alt="">
+              <div class="result-info">
+                <p class="title-jp" id="titleJp"></p>
+                <h2 class="title-main" id="titleMain"></h2>
+                <div class="meta-row">
+                  <span class="score" id="score"></span>
+                  <span class="meta-text" id="metaText"></span>
+                </div>
+                <div class="genre-pills" id="genrePills"></div>
+                <p class="synopsis" id="synopsis"></p>
+                <div class="watch-block">
+                  <p class="watch-label">Where to Watch</p>
+                  <div class="watch-links" id="watchLinks"></div>
+                </div>
+                <div class="action-row">
+                  <button class="save-btn" id="saveBtn" type="button">＋ Save to Watchlist</button>
+                  <button class="save-btn" id="seenBtn" type="button">👁 Mark as Seen</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="error-state" id="errorState" hidden>
+            <p class="error-title">SIGNAL LOST</p>
+            <p class="error-message" id="errorMessage"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <span class="knob" aria-hidden="true"></span>
+      <button class="dial-btn" id="surpriseBtn" type="button">🔀 Surprise Me</button>
+      <span class="knob" aria-hidden="true"></span>
+    </div>
+    </div>
+
+    <section class="browse-view" id="browseView" hidden>
+      <div class="browse-header">
+        <button class="back-link" id="browseBack" type="button">← Back</button>
+        <h2 class="browse-title" id="browseTitle">Browse</h2>
+        <button class="random-pick-btn" id="browseRandomBtn" type="button">🎲 Random Pick</button>
+      </div>
+
+      <div class="spotlight-card" id="spotlightCard" hidden>
+        <button class="spotlight-close" id="spotlightClose" type="button" aria-label="Close random pick">×</button>
+        <p class="browse-status" id="spotlightStatus" hidden></p>
+        <div class="result-grid" id="spotlightBody" hidden>
+          <img class="poster" id="spotlightPoster" alt="">
+          <div class="result-info">
+            <p class="title-jp" id="spotlightTitleJp"></p>
+            <h3 class="title-main" id="spotlightTitleMain"></h3>
+            <div class="meta-row">
+              <span class="score" id="spotlightScore"></span>
+              <span class="meta-text" id="spotlightMeta"></span>
+            </div>
+            <div class="genre-pills" id="spotlightGenres"></div>
+            <p class="synopsis" id="spotlightSynopsis"></p>
+            <div class="watch-block">
+              <p class="watch-label">Where to Watch</p>
+              <div class="watch-links" id="spotlightWatchLinks"></div>
+            </div>
+            <div class="spotlight-actions">
+              <button class="save-btn" id="spotlightSaveBtn" type="button">＋ Save to Watchlist</button>
+              <button class="save-btn" id="spotlightSeenBtn" type="button">👁 Mark as Seen</button>
+              <button class="random-pick-btn" id="spotlightAnotherBtn" type="button">🔀 Another</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p class="browse-status" id="browseStatus" hidden></p>
+      <div class="browse-grid" id="browseGrid"></div>
+      <button class="load-more-btn" id="loadMoreBtn" type="button" hidden>Load More</button>
+    </section>
+
+    <section class="browse-view" id="seenView" hidden>
+      <div class="browse-header">
+        <button class="back-link" id="seenBack" type="button">← Back</button>
+        <h2 class="browse-title">Already Seen</h2>
+      </div>
+      <p class="browse-status" id="seenEmpty" hidden>You haven't marked anything as seen yet.</p>
+      <div class="browse-grid" id="seenGrid"></div>
+    </section>
+
+    <section class="watchlist-shelf">
+      <h2 class="shelf-title">Saved for Later</h2>
+      <div class="tape-row" id="tapeRow"></div>
+      <p class="shelf-empty" id="shelfEmpty">Nothing saved yet — tune in and hit save on something good.</p>
+    </section>
+  </div>
+
+<script>
+(function () {
+  'use strict';
+
+  const STORAGE_KEY = 'surpriseme_watchlist_v2';
+
+  const ANILIST_ENDPOINT = 'https://graphql.anilist.co';
+  const ANILIST_QUERY =
+    'query ($page: Int, $perPage: Int, $id_not_in: [Int]) {' +
+    '  Page(page: $page, perPage: $perPage) {' +
+    '    media(type: ANIME, isAdult: false, id_not_in: $id_not_in, sort: ID) {' +
+    '      id' +
+    '      idMal' +
+    '      title { romaji english native }' +
+    '      coverImage { large extraLarge }' +
+    '      averageScore' +
+    '      episodes' +
+    '      format' +
+    '      seasonYear' +
+    '      genres' +
+    '      description(asHtml: false)' +
+    '      externalLinks { site url type }' +
+    '      siteUrl' +
+    '    }' +
+    '  }' +
+    '}';
+  const ANILIST_MAX_PAGE = 200; // AniList caps page * perPage at 5000; perPage is 25
+
+  const ANILIST_BROWSE_QUERY =
+    'query ($page: Int, $perPage: Int, $genre_in: [String], $genre_not_in: [String], $format: MediaFormat, $episodes_lesser: Int, $tag_in: [String], $tag_not_in: [String], $search: String, $id_not_in: [Int], $popularity_greater: Int, $sort: [MediaSort]) {' +
+    '  Page(page: $page, perPage: $perPage) {' +
+    '    pageInfo { hasNextPage lastPage }' +
+    '    media(type: ANIME, isAdult: false, genre_in: $genre_in, genre_not_in: $genre_not_in, format: $format, episodes_lesser: $episodes_lesser, tag_in: $tag_in, tag_not_in: $tag_not_in, search: $search, id_not_in: $id_not_in, popularity_greater: $popularity_greater, sort: $sort) {' +
+    '      id' +
+    '      idMal' +
+    '      title { romaji english native }' +
+    '      coverImage { large extraLarge }' +
+    '      averageScore' +
+    '      episodes' +
+    '      format' +
+    '      seasonYear' +
+    '      genres' +
+    '      description(asHtml: false)' +
+    '      externalLinks { site url type }' +
+    '      siteUrl' +
+    '    }' +
+    '  }' +
+    '}';
+
+  const BROWSE_PER_PAGE = 24;
+
+  const CATEGORY_DEFS = {
+    movies: { label: 'Movies', variables: { format: 'MOVIE' } },
+    short: { label: 'Short Watches', variables: { episodes_lesser: 24 } },
+    shonen: { label: 'Shonen', variables: { tag_in: ['Shounen'] } },
+    family: { label: 'Family-Friendly', variables: { tag_in: ['Kids'] } },
+    // popularity_greater excludes obscure titles whose high score comes from
+    // just a handful of ratings, so this stays a genuine "highest rated" list.
+    'top-rated': { label: 'Top Rated', variables: { sort: ['SCORE_DESC'], popularity_greater: 10000 } },
+    // Mood-based filters: fans usually want "nothing sad tonight" or "peak feels",
+    // not a literal genre — these map that intent onto genre/tag combinations.
+    'peak-feels': { label: 'Peak Feels', variables: { genre_in: ['Drama'], tag_in: ['Tragedy'] } },
+    'nothing-sad': {
+      label: 'Nothing Sad Right Now',
+      variables: { genre_not_in: ['Drama', 'Psychological', 'Horror', 'Thriller'], tag_not_in: ['Tragedy'] }
+    },
+    'comfort-watch': { label: 'Comfort Watch', variables: { tag_in: ['Iyashikei'] } },
+    'brain-off': {
+      label: 'Turn Your Brain Off',
+      variables: { genre_in: ['Action', 'Comedy'], genre_not_in: ['Psychological', 'Drama'] }
+    }
+  };
+
+  const THEMES = {
+    default: {
+      label: 'LATE NIGHT BLOCK',
+      ink: 'oklch(13% 0.012 240)', panel: 'oklch(20% 0.014 240)', panel2: 'oklch(23% 0.016 240)', screen: 'oklch(9% 0.012 240)',
+      accent: 'oklch(65% 0.19 12)', accentDim: 'oklch(40% 0.15 12)', gold: 'oklch(70% 0.13 195)',
+      glow: 'oklch(65% 0.19 12 / 0.55)', muted: 'oklch(65% 0.012 240)'
+    },
+    Horror: {
+      label: 'HORROR BLOCK',
+      ink: '#0a0505', panel: '#1f0808', panel2: '#120404', screen: '#030101',
+      accent: '#c81f2b', accentDim: '#5e0e14', gold: '#9fae3a',
+      glow: 'rgba(200, 31, 43, 0.6)', muted: '#8a6f6f'
+    },
+    'Sci-Fi': {
+      label: 'SCI-FI SIGNAL',
+      ink: '#050b12', panel: '#0d2233', panel2: '#081420', screen: '#020608',
+      accent: '#2be3ff', accentDim: '#127e93', gold: '#ffd76a',
+      glow: 'rgba(43, 227, 255, 0.55)', muted: '#6f8a94'
+    },
+    Mystery: {
+      label: 'MYSTERY HOUR',
+      ink: '#0a0a16', panel: '#1c1b3a', panel2: '#121128', screen: '#030309',
+      accent: '#7c8cff', accentDim: '#3c437f', gold: '#c9b8ff',
+      glow: 'rgba(124, 140, 255, 0.55)', muted: '#7d7fa0'
+    },
+    Sports: {
+      label: 'SPORTS BLOCK',
+      ink: '#06120a', panel: '#0f2b1a', panel2: '#0a1c11', screen: '#020a05',
+      accent: '#3fe86a', accentDim: '#1e7a3c', gold: '#d4ff5a',
+      glow: 'rgba(63, 232, 106, 0.55)', muted: '#6f9c7f'
+    },
+    Romance: {
+      label: 'ROMANCE HOUR',
+      ink: '#140a12', panel: '#3a1a30', panel2: '#26101f', screen: '#0a040a',
+      accent: '#ff8fc0', accentDim: '#a84a80', gold: '#e0b3ff',
+      glow: 'rgba(255, 143, 192, 0.55)', muted: '#a5849c'
+    },
+    Fantasy: {
+      label: 'FANTASY REALM',
+      ink: '#0d0818', panel: '#2a1447', panel2: '#180c2c', screen: '#050308',
+      accent: '#a06bff', accentDim: '#5c3599', gold: '#ffcf5c',
+      glow: 'rgba(160, 107, 255, 0.55)', muted: '#8f7fae'
+    },
+    Action: {
+      label: 'ACTION SPECIAL',
+      ink: '#150c05', panel: '#3a1f0a', panel2: '#241305', screen: '#0a0502',
+      accent: '#ff7a1f', accentDim: '#a3480c', gold: '#ffb84d',
+      glow: 'rgba(255, 122, 31, 0.55)', muted: '#ab8f74'
+    },
+    Comedy: {
+      label: 'COMEDY HOUR',
+      ink: '#160f04', panel: '#3d2a08', panel2: '#241a05', screen: '#0a0602',
+      accent: '#ffcc33', accentDim: '#a67f14', gold: '#fff08a',
+      glow: 'rgba(255, 204, 51, 0.55)', muted: '#ab9c74'
+    },
+    'Slice of Life': {
+      label: 'SLICE OF LIFE',
+      ink: '#0a1006', panel: '#22300f', panel2: '#151f09', screen: '#040702',
+      accent: '#8fd15a', accentDim: '#537f2e', gold: '#d7e89a',
+      glow: 'rgba(143, 209, 90, 0.55)', muted: '#89a075'
+    }
+  };
+
+  const GENRE_PRIORITY = [
+    'Horror', 'Sci-Fi', 'Mystery', 'Sports', 'Romance',
+    'Fantasy', 'Action', 'Comedy', 'Slice of Life'
+  ];
+
+  const GENRE_DISPLAY_NAMES = {
+    'Mahou Shoujo': 'Magical Girl'
+  };
+
+  const NAV_GENRES = [
+    'Action', 'Adventure', 'Comedy', 'Drama', 'Fantasy', 'Horror', 'Mahou Shoujo',
+    'Music', 'Mystery', 'Romance', 'Sci-Fi', 'Sports', 'Supernatural'
+  ];
+
+  // Suggestion index for the search omnibox: every genre/mood/category "tab"
+  // in the app, so typing "horror" can jump straight to that page instead of
+  // running a title search.
+  const TAB_SUGGESTIONS = Object.keys(CATEGORY_DEFS)
+    .map((key) => ({ label: CATEGORY_DEFS[key].label, hash: '#/category/' + key }))
+    .concat(
+      NAV_GENRES.map((genre) => ({
+        label: GENRE_DISPLAY_NAMES[genre] || genre,
+        hash: '#/genre/' + encodeURIComponent(genre)
+      }))
+    );
+
+  const els = {
+    eyebrow: document.getElementById('eyebrow'),
+    tv: document.getElementById('tv'),
+    screen: document.getElementById('screen'),
+    channelTag: document.getElementById('channelTag'),
+    onAir: document.getElementById('onAir'),
+    idleState: document.getElementById('idleState'),
+    result: document.getElementById('result'),
+    errorState: document.getElementById('errorState'),
+    errorMessage: document.getElementById('errorMessage'),
+    poster: document.getElementById('poster'),
+    titleJp: document.getElementById('titleJp'),
+    titleMain: document.getElementById('titleMain'),
+    score: document.getElementById('score'),
+    metaText: document.getElementById('metaText'),
+    genrePills: document.getElementById('genrePills'),
+    synopsis: document.getElementById('synopsis'),
+    watchLinks: document.getElementById('watchLinks'),
+    saveBtn: document.getElementById('saveBtn'),
+    seenBtn: document.getElementById('seenBtn'),
+    seenView: document.getElementById('seenView'),
+    seenBack: document.getElementById('seenBack'),
+    seenGrid: document.getElementById('seenGrid'),
+    seenEmpty: document.getElementById('seenEmpty'),
+    surpriseBtn: document.getElementById('surpriseBtn'),
+    tapeRow: document.getElementById('tapeRow'),
+    shelfEmpty: document.getElementById('shelfEmpty'),
+    categoryNav: document.getElementById('categoryNav'),
+    genreHubView: document.getElementById('genreHubView'),
+    genreHubBack: document.getElementById('genreHubBack'),
+    homeView: document.getElementById('homeView'),
+    browseView: document.getElementById('browseView'),
+    browseBack: document.getElementById('browseBack'),
+    browseTitle: document.getElementById('browseTitle'),
+    browseStatus: document.getElementById('browseStatus'),
+    browseGrid: document.getElementById('browseGrid'),
+    loadMoreBtn: document.getElementById('loadMoreBtn'),
+    searchForm: document.getElementById('searchForm'),
+    searchSuggestions: document.getElementById('searchSuggestions'),
+    malConnectBtn: document.getElementById('malConnectBtn'),
+    malConnectedBadge: document.getElementById('malConnectedBadge'),
+    malDisconnectBtn: document.getElementById('malDisconnectBtn'),
+    malSyncStatus: document.getElementById('malSyncStatus'),
+    searchInput: document.getElementById('searchInput'),
+    browseRandomBtn: document.getElementById('browseRandomBtn'),
+    spotlightCard: document.getElementById('spotlightCard'),
+    spotlightClose: document.getElementById('spotlightClose'),
+    spotlightStatus: document.getElementById('spotlightStatus'),
+    spotlightBody: document.getElementById('spotlightBody'),
+    spotlightPoster: document.getElementById('spotlightPoster'),
+    spotlightTitleJp: document.getElementById('spotlightTitleJp'),
+    spotlightTitleMain: document.getElementById('spotlightTitleMain'),
+    spotlightScore: document.getElementById('spotlightScore'),
+    spotlightMeta: document.getElementById('spotlightMeta'),
+    spotlightGenres: document.getElementById('spotlightGenres'),
+    spotlightSynopsis: document.getElementById('spotlightSynopsis'),
+    spotlightWatchLinks: document.getElementById('spotlightWatchLinks'),
+    spotlightSaveBtn: document.getElementById('spotlightSaveBtn'),
+    spotlightSeenBtn: document.getElementById('spotlightSeenBtn'),
+    spotlightAnotherBtn: document.getElementById('spotlightAnotherBtn')
+  };
+
+  let spotlightAnime = null;
+
+  let isFetching = false;
+  let currentAnime = null;
+  let currentGenreKey = null;
+
+  function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  // ---------- Fetch resilience ----------
+  async function fetchWithRetry(url, options, maxAttempts = 4) {
+    let attempt = 0;
+    while (true) {
+      attempt++;
+      let res;
+      try {
+        res = await fetch(url, options);
+      } catch (networkErr) {
+        if (attempt >= maxAttempts) {
+          const err = new Error('Network request failed after ' + attempt + ' attempts.');
+          err.type = 'network';
+          err.cause = networkErr;
+          throw err;
+        }
+        await sleep(900 * attempt);
+        continue;
+      }
+
+      if (res.ok) {
+        const json = await res.json();
+        if (json && Array.isArray(json.errors) && json.errors.length) {
+          const err = new Error('AniList returned errors: ' + json.errors.map((e) => e.message).join('; '));
+          err.type = 'server';
+          throw err;
+        }
+        return json;
+      }
+
+      if ([429, 500, 502, 503, 504].includes(res.status) && attempt < maxAttempts) {
+        const retryAfter = Number(res.headers.get('Retry-After'));
+        await sleep(retryAfter > 0 ? retryAfter * 1000 : 900 * attempt);
+        continue;
+      }
+
+      const err = new Error('AniList responded with HTTP ' + res.status);
+      err.status = res.status;
+      err.type = res.status === 429 ? 'rate-limit' : (res.status >= 500 ? 'server' : 'http');
+      throw err;
+    }
+  }
+
+  function errorMessageFor(err) {
+    if (err && err.type === 'rate-limit') {
+      return "AniList is rate-limiting requests right now. Wait a few seconds and hit the dial again.";
+    }
+    if (err && err.type === 'network') {
+      return "Couldn't reach AniList — check your internet connection and try again.";
+    }
+    if (err && err.type === 'server') {
+      return "AniList's servers are having trouble right now. Try again in a moment.";
+    }
+    return "Something went wrong tuning in. Open the console for details.";
+  }
+
+  // ---------- Theming ----------
+  function dominantGenre(genres) {
+    const names = (genres || []).map((g) => (g || '').toLowerCase());
+    for (const key of GENRE_PRIORITY) {
+      if (names.includes(key.toLowerCase())) return key;
+    }
+    return null;
+  }
+
+  function applyTheme(genreKey) {
+    const theme = THEMES[genreKey] || THEMES.default;
+    const root = document.documentElement.style;
+    root.setProperty('--ink', theme.ink);
+    root.setProperty('--panel', theme.panel);
+    root.setProperty('--panel-2', theme.panel2);
+    root.setProperty('--screen', theme.screen);
+    root.setProperty('--accent', theme.accent);
+    root.setProperty('--accent-dim', theme.accentDim);
+    root.setProperty('--gold', theme.gold);
+    root.setProperty('--glow', theme.glow);
+    root.setProperty('--muted', theme.muted);
+    els.eyebrow.textContent = theme.label;
+
+    currentGenreKey = genreKey || null;
+    els.eyebrow.disabled = !currentGenreKey;
+    els.eyebrow.title = currentGenreKey ? 'Browse more ' + currentGenreKey + ' anime' : '';
+  }
+
+  // ---------- Channel / tuning UI ----------
+  function randomizeChannel() {
+    const num = Math.floor(Math.random() * 98) + 2;
+    els.channelTag.textContent = 'CH. ' + String(num).padStart(2, '0');
+  }
+
+  function showTuning() {
+    els.screen.classList.add('tuning');
+    els.onAir.classList.remove('live');
+  }
+
+  function stopTuning() {
+    els.screen.classList.remove('tuning');
+  }
+
+  function showIdle() {
+    els.idleState.hidden = false;
+    els.result.hidden = true;
+    els.errorState.hidden = true;
+    els.onAir.classList.remove('live');
+  }
+
+  function showError(err) {
+    els.idleState.hidden = true;
+    els.result.hidden = true;
+    els.errorState.hidden = false;
+    els.errorMessage.textContent = errorMessageFor(err);
+    els.onAir.classList.remove('live');
+  }
+
+  // ---------- Rendering ----------
+  function cleanSynopsisText(text) {
+    return (text || '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\(Source:[^)]*\)/gi, '')
+      .replace(/\[Written by MAL Rewrite\]/gi, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  function truncateSynopsis(text) {
+    const clean = cleanSynopsisText(text);
+    if (!clean) return 'No synopsis available.';
+    if (clean.length > 220) {
+      return clean.slice(0, 220).trim() + '…';
+    }
+    return clean;
+  }
+
+  function clearChildren(node) {
+    while (node.firstChild) node.removeChild(node.firstChild);
+  }
+
+  const FORMAT_ACRONYMS = ['TV', 'OVA', 'ONA'];
+
+  function humanizeFormat(format) {
+    if (!format) return '';
+    return format
+      .split('_')
+      .map((w) => (FORMAT_ACRONYMS.includes(w) ? w : w.charAt(0) + w.slice(1).toLowerCase()))
+      .join(' ');
+  }
+
+  // Picks randomly from a batch of raw AniList media objects, weighted by
+  // averageScore squared so higher-rated anime come up more often without
+  // making lower-rated ones impossible. Missing scores get a modest baseline.
+  function weightedRandomPick(mediaList) {
+    const weights = mediaList.map((m) => {
+      const score = typeof m.averageScore === 'number' ? m.averageScore : 50;
+      return Math.max(1, score) * Math.max(1, score);
+    });
+    const total = weights.reduce((sum, w) => sum + w, 0);
+    let roll = Math.random() * total;
+    for (let i = 0; i < mediaList.length; i++) {
+      roll -= weights[i];
+      if (roll <= 0) return mediaList[i];
+    }
+    return mediaList[mediaList.length - 1];
+  }
+
+  function normalizeAnime(media) {
+    const title = media.title || {};
+    return {
+      id: media.id,
+      idMal: media.idMal || null,
+      titleRomaji: title.romaji || '',
+      titleEnglish: title.english || '',
+      titleNative: title.native || '',
+      poster: (media.coverImage && (media.coverImage.large || media.coverImage.extraLarge)) || '',
+      score: typeof media.averageScore === 'number' ? media.averageScore / 10 : null,
+      format: humanizeFormat(media.format),
+      episodes: media.episodes || null,
+      year: media.seasonYear || null,
+      genres: media.genres || [],
+      synopsis: media.description || '',
+      externalLinks: Array.isArray(media.externalLinks) ? media.externalLinks : [],
+      siteUrl: media.siteUrl || ''
+    };
+  }
+
+  function renderWatchLinks(anime, container) {
+    const target = container || els.watchLinks;
+    clearChildren(target);
+    const streaming = anime.externalLinks.filter((l) => l.type === 'STREAMING');
+
+    if (streaming.length) {
+      streaming.forEach((s) => {
+        const a = document.createElement('a');
+        a.className = 'pill-link';
+        a.href = s.url;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.textContent = s.site || 'Watch';
+        target.appendChild(a);
+      });
+      return;
+    }
+
+    const title = anime.titleEnglish || anime.titleRomaji || '';
+    const crunchy = document.createElement('a');
+    crunchy.className = 'pill-link';
+    crunchy.href = 'https://www.crunchyroll.com/search?q=' + encodeURIComponent(title);
+    crunchy.target = '_blank';
+    crunchy.rel = 'noopener noreferrer';
+    crunchy.textContent = 'Search Crunchyroll';
+    target.appendChild(crunchy);
+
+    const fallbackUrl = anime.idMal ? 'https://myanimelist.net/anime/' + anime.idMal : anime.siteUrl;
+    if (fallbackUrl) {
+      const link = document.createElement('a');
+      link.className = 'pill-link';
+      link.href = fallbackUrl;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.textContent = anime.idMal ? 'View on MyAnimeList' : 'View on AniList';
+      target.appendChild(link);
+    }
+  }
+
+  function renderResult(anime) {
+    currentAnime = anime;
+
+    els.poster.src = anime.poster;
+    els.poster.alt = (anime.titleEnglish || anime.titleRomaji || 'Anime poster') + ' poster';
+
+    els.titleJp.textContent = anime.titleNative || '';
+    els.titleJp.hidden = !anime.titleNative;
+    els.titleMain.textContent = anime.titleEnglish || anime.titleRomaji || 'Untitled';
+
+    els.score.textContent = anime.score ? '★ ' + anime.score.toFixed(1) : '★ —';
+
+    const metaParts = [];
+    if (anime.format) metaParts.push(anime.format);
+    if (anime.episodes) metaParts.push(anime.episodes + ' ep');
+    if (anime.year) metaParts.push(String(anime.year));
+    els.metaText.textContent = metaParts.join(' · ');
+
+    clearChildren(els.genrePills);
+    (anime.genres || []).slice(0, 4).forEach((g) => {
+      const pill = document.createElement('span');
+      pill.className = 'genre-pill';
+      pill.textContent = g;
+      els.genrePills.appendChild(pill);
+    });
+
+    els.synopsis.textContent = truncateSynopsis(anime.synopsis);
+
+    renderWatchLinks(anime);
+    updateSaveButton();
+    updateSeenButton();
+
+    applyTheme(dominantGenre(anime.genres));
+
+    els.idleState.hidden = true;
+    els.errorState.hidden = true;
+    els.result.hidden = false;
+    els.onAir.classList.add('live');
+  }
+
+  // ---------- Watchlist ----------
+  function loadWatchlist() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+      console.error('Failed to read watchlist from localStorage', e);
+      return [];
+    }
+  }
+
+  function saveWatchlist(list) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+    } catch (e) {
+      console.error('Failed to write watchlist to localStorage', e);
+    }
+  }
+
+  function isSaved(id) {
+    return loadWatchlist().some((item) => item.id === id);
+  }
+
+  function addToWatchlist(anime) {
+    const list = loadWatchlist();
+    if (list.some((item) => item.id === anime.id)) return;
+    list.push({
+      id: anime.id,
+      title: anime.titleEnglish || anime.titleRomaji || 'Untitled',
+      image: anime.poster || '',
+      url: anime.idMal ? 'https://myanimelist.net/anime/' + anime.idMal : anime.siteUrl,
+      genres: anime.genres || []
+    });
+    saveWatchlist(list);
+    renderWatchlistShelf();
+  }
+
+  const WATCHLIST_GENRE_BIAS_CHANCE = 0.1;
+
+  function getWatchlistGenres() {
+    const genres = new Set();
+    loadWatchlist().forEach((item) => {
+      (item.genres || []).forEach((g) => genres.add(g));
+    });
+    return Array.from(genres);
+  }
+
+  // Nudges a random pick toward a genre from the user's watchlist: ~5% of the
+  // time, if nothing already pins the genre (a genre page) or it's a title
+  // search, swap in a random watchlist genre as the filter for that pick.
+  function applyWatchlistGenreBias(baseVariables) {
+    const variables = baseVariables || {};
+    if (variables.genre_in || variables.search) return variables;
+
+    const favoriteGenres = getWatchlistGenres();
+    if (!favoriteGenres.length || Math.random() >= WATCHLIST_GENRE_BIAS_CHANCE) return variables;
+
+    const genre = favoriteGenres[Math.floor(Math.random() * favoriteGenres.length)];
+    return Object.assign({}, variables, { genre_in: [genre] });
+  }
+
+  function removeFromWatchlist(id) {
+    const list = loadWatchlist().filter((item) => item.id !== id);
+    saveWatchlist(list);
+    renderWatchlistShelf();
+    if (currentAnime && currentAnime.id === id) updateSaveButton();
+  }
+
+  function updateSaveButton() {
+    if (!currentAnime) return;
+    const saved = isSaved(currentAnime.id);
+    els.saveBtn.textContent = saved ? '✓ Saved' : '＋ Save to Watchlist';
+    els.saveBtn.classList.toggle('saved', saved);
+  }
+
+  function renderWatchlistShelf() {
+    const list = loadWatchlist();
+    clearChildren(els.tapeRow);
+
+    if (!list.length) {
+      els.shelfEmpty.hidden = false;
+      els.tapeRow.hidden = true;
+      return;
+    }
+
+    els.shelfEmpty.hidden = true;
+    els.tapeRow.hidden = false;
+
+    list.forEach((item) => {
+      const card = document.createElement('div');
+      card.className = 'tape-card';
+
+      const thumb = document.createElement('img');
+      thumb.className = 'tape-thumb';
+      thumb.src = item.image;
+      thumb.alt = item.title + ' thumbnail';
+      card.appendChild(thumb);
+
+      const info = document.createElement('div');
+      info.className = 'tape-info';
+      const link = document.createElement('a');
+      link.className = 'tape-title';
+      link.href = item.url || '#';
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.textContent = item.title;
+      info.appendChild(link);
+      card.appendChild(info);
+
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'tape-remove';
+      removeBtn.type = 'button';
+      removeBtn.setAttribute('aria-label', 'Remove ' + item.title + ' from watchlist');
+      removeBtn.textContent = '×';
+      removeBtn.addEventListener('click', () => removeFromWatchlist(item.id));
+      card.appendChild(removeBtn);
+
+      els.tapeRow.appendChild(card);
+    });
+  }
+
+  // ---------- Seen list (excluded from random picks) ----------
+  const SEEN_STORAGE_KEY = 'surpriseme_seen_v1';
+
+  function loadSeenList() {
+    try {
+      const raw = localStorage.getItem(SEEN_STORAGE_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+      console.error('Failed to read seen list from localStorage', e);
+      return [];
+    }
+  }
+
+  function saveSeenList(list) {
+    try {
+      localStorage.setItem(SEEN_STORAGE_KEY, JSON.stringify(list));
+    } catch (e) {
+      console.error('Failed to write seen list to localStorage', e);
+    }
+  }
+
+  function isSeen(id) {
+    return loadSeenList().some((item) => item.id === id);
+  }
+
+  function getSeenIds() {
+    return loadSeenList().map((item) => item.id);
+  }
+
+  function addToSeen(anime) {
+    const list = loadSeenList();
+    if (list.some((item) => item.id === anime.id)) return;
+    list.push({
+      id: anime.id,
+      title: anime.titleEnglish || anime.titleRomaji || 'Untitled',
+      image: anime.poster || '',
+      url: anime.idMal ? 'https://myanimelist.net/anime/' + anime.idMal : anime.siteUrl,
+      genres: anime.genres || []
+    });
+    saveSeenList(list);
+    if (!els.seenView.hidden) renderSeenPage();
+  }
+
+  function removeFromSeen(id) {
+    const list = loadSeenList().filter((item) => item.id !== id);
+    saveSeenList(list);
+    if (!els.seenView.hidden) renderSeenPage();
+  }
+
+  function updateSeenButton() {
+    if (!currentAnime) return;
+    const seen = isSeen(currentAnime.id);
+    els.seenBtn.textContent = seen ? '✓ Seen' : '👁 Mark as Seen';
+    els.seenBtn.classList.toggle('seen', seen);
+  }
+
+  function renderSeenPage() {
+    const list = loadSeenList();
+    clearChildren(els.seenGrid);
+
+    if (!list.length) {
+      els.seenEmpty.hidden = false;
+      els.seenGrid.hidden = true;
+      return;
+    }
+
+    els.seenEmpty.hidden = true;
+    els.seenGrid.hidden = false;
+
+    list.forEach((item) => {
+      const card = document.createElement('div');
+      card.className = 'browse-card';
+
+      const poster = document.createElement('img');
+      poster.className = 'browse-card-poster';
+      poster.src = item.image;
+      poster.alt = item.title + ' poster';
+      card.appendChild(poster);
+
+      const body = document.createElement('div');
+      body.className = 'browse-card-body';
+
+      const link = document.createElement('a');
+      link.className = 'browse-card-title';
+      link.href = item.url || '#';
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.textContent = item.title;
+      body.appendChild(link);
+
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'browse-card-save';
+      removeBtn.type = 'button';
+      removeBtn.textContent = '✕ Remove from Seen';
+      removeBtn.addEventListener('click', () => {
+        removeFromSeen(item.id);
+        if (currentAnime && currentAnime.id === item.id) updateSeenButton();
+      });
+      body.appendChild(removeBtn);
+
+      card.appendChild(body);
+      els.seenGrid.appendChild(card);
+    });
+  }
+
+  // ---------- MyAnimeList account import (read-only) ----------
+  // Fill this in after registering an "Other"-type app at
+  // https://myanimelist.net/apiconfig — that app type gets no client_secret,
+  // so there's nothing sensitive about this value being public in the page.
+  const MAL_CLIENT_ID = 'YOUR_MAL_CLIENT_ID';
+  const MAL_AUTH_STORAGE_KEY = 'surpriseme_mal_auth_v1';
+  const MAL_SEEN_STATUSES = ['watching', 'completed', 'on_hold', 'dropped'];
+
+  const ANILIST_MAL_LOOKUP_QUERY =
+    'query ($idMal_in: [Int], $page: Int, $perPage: Int) {' +
+    '  Page(page: $page, perPage: $perPage) {' +
+    '    media(type: ANIME, idMal_in: $idMal_in) {' +
+    '      id' +
+    '      idMal' +
+    '      title { romaji english native }' +
+    '      coverImage { large extraLarge }' +
+    '      averageScore' +
+    '      episodes' +
+    '      format' +
+    '      seasonYear' +
+    '      genres' +
+    '      description(asHtml: false)' +
+    '      externalLinks { site url type }' +
+    '      siteUrl' +
+    '    }' +
+    '  }' +
+    '}';
+
+  function malRedirectUri() {
+    return location.origin + location.pathname;
+  }
+
+  function base64UrlEncode(bytes) {
+    let binary = '';
+    bytes.forEach((b) => {
+      binary += String.fromCharCode(b);
+    });
+    return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+
+  function generateRandomToken() {
+    const bytes = new Uint8Array(64);
+    crypto.getRandomValues(bytes);
+    return base64UrlEncode(bytes);
+  }
+
+  function loadMalAuth() {
+    try {
+      const raw = localStorage.getItem(MAL_AUTH_STORAGE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (err) {
+      console.error('Failed to read MAL auth from localStorage', err);
+      return null;
+    }
+  }
+
+  function saveMalAuth(auth) {
+    try {
+      localStorage.setItem(MAL_AUTH_STORAGE_KEY, JSON.stringify(auth));
+    } catch (err) {
+      console.error('Failed to save MAL auth to localStorage', err);
+    }
+  }
+
+  function clearMalAuth() {
+    localStorage.removeItem(MAL_AUTH_STORAGE_KEY);
+  }
+
+  function updateMalAuthUI() {
+    const connected = !!loadMalAuth();
+    els.malConnectBtn.hidden = connected;
+    els.malConnectedBadge.hidden = !connected;
+  }
+
+  function startMalLogin() {
+    const verifier = generateRandomToken();
+    const state = generateRandomToken();
+    sessionStorage.setItem('mal_code_verifier', verifier);
+    sessionStorage.setItem('mal_oauth_state', state);
+
+    const params = new URLSearchParams({
+      response_type: 'code',
+      client_id: MAL_CLIENT_ID,
+      code_challenge: verifier,
+      code_challenge_method: 'plain',
+      state: state,
+      redirect_uri: malRedirectUri()
+    });
+    location.href = 'https://myanimelist.net/v1/oauth2/authorize?' + params.toString();
+  }
+
+  async function exchangeMalCode(code, verifier) {
+    const res = await fetch('/api/mal/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: code, code_verifier: verifier, redirect_uri: malRedirectUri() })
+    });
+    if (!res.ok) throw new Error('MAL token exchange failed: HTTP ' + res.status);
+    const json = await res.json();
+    return {
+      accessToken: json.access_token,
+      refreshToken: json.refresh_token,
+      expiresAt: Date.now() + json.expires_in * 1000
+    };
+  }
+
+  async function refreshMalAuth(auth) {
+    const res = await fetch('/api/mal/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ grant_type: 'refresh_token', refresh_token: auth.refreshToken })
+    });
+    if (!res.ok) throw new Error('MAL token refresh failed: HTTP ' + res.status);
+    const json = await res.json();
+    return {
+      accessToken: json.access_token,
+      refreshToken: json.refresh_token || auth.refreshToken,
+      expiresAt: Date.now() + json.expires_in * 1000
+    };
+  }
+
+  async function getValidMalAccessToken() {
+    let auth = loadMalAuth();
+    if (!auth) return null;
+    if (Date.now() > auth.expiresAt - 60000) {
+      auth = await refreshMalAuth(auth);
+      saveMalAuth(auth);
+    }
+    return auth.accessToken;
+  }
+
+  async function resolveAnilistByMalIds(malIds) {
+    const map = {};
+    const chunkSize = 50;
+    for (let i = 0; i < malIds.length; i += chunkSize) {
+      const chunk = malIds.slice(i, i + chunkSize);
+      const json = await fetchWithRetry(ANILIST_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          query: ANILIST_MAL_LOOKUP_QUERY,
+          variables: { idMal_in: chunk, page: 1, perPage: chunkSize }
+        })
+      });
+      const media = (json && json.data && json.data.Page && json.data.Page.media) || [];
+      media.forEach((m) => {
+        map[m.idMal] = m;
+      });
+    }
+    return map;
+  }
+
+  async function importMalList() {
+    const token = await getValidMalAccessToken();
+    if (!token) return;
+
+    els.malSyncStatus.hidden = false;
+    els.malSyncStatus.textContent = 'Syncing your MyAnimeList…';
+
+    try {
+      const res = await fetch('/api/mal/list', {
+        headers: { Authorization: 'Bearer ' + token }
+      });
+      if (!res.ok) throw new Error('Failed to fetch MAL list: HTTP ' + res.status);
+      const json = await res.json();
+      const entries = json.data || [];
+
+      const malIds = entries.map((entry) => entry.node.id);
+      const anilistByMalId = await resolveAnilistByMalIds(malIds);
+
+      const watchlist = loadWatchlist();
+      const seen = loadSeenList();
+      let importedCount = 0;
+
+      entries.forEach((entry) => {
+        const media = anilistByMalId[entry.node.id];
+        if (!media) return;
+        const anime = normalizeAnime(media);
+        const status = entry.list_status && entry.list_status.status;
+        const record = {
+          id: anime.id,
+          title: anime.titleEnglish || anime.titleRomaji || 'Untitled',
+          image: anime.poster || '',
+          url: anime.idMal ? 'https://myanimelist.net/anime/' + anime.idMal : anime.siteUrl,
+          genres: anime.genres || []
+        };
+
+        if (status === 'plan_to_watch') {
+          if (!watchlist.some((item) => item.id === anime.id)) {
+            watchlist.push(record);
+            importedCount++;
+          }
+        } else if (MAL_SEEN_STATUSES.indexOf(status) !== -1) {
+          if (!seen.some((item) => item.id === anime.id)) {
+            seen.push(record);
+            importedCount++;
+          }
+        }
+      });
+
+      saveWatchlist(watchlist);
+      saveSeenList(seen);
+      renderWatchlistShelf();
+      if (!els.seenView.hidden) renderSeenPage();
+
+      els.malSyncStatus.textContent = 'Synced ' + entries.length + ' MyAnimeList entries (' + importedCount + ' new).';
+    } catch (err) {
+      console.error('MAL list import failed:', err);
+      els.malSyncStatus.hidden = false;
+      els.malSyncStatus.textContent = 'Could not sync your MyAnimeList — open the console for details.';
+    }
+  }
+
+  async function handleMalRedirect() {
+    const params = new URLSearchParams(location.search);
+    const code = params.get('code');
+    if (!code) return;
+
+    const state = params.get('state');
+    const expectedState = sessionStorage.getItem('mal_oauth_state');
+    const verifier = sessionStorage.getItem('mal_code_verifier');
+    sessionStorage.removeItem('mal_oauth_state');
+    sessionStorage.removeItem('mal_code_verifier');
+    history.replaceState(null, '', location.pathname + location.hash);
+
+    if (!verifier || !state || state !== expectedState) {
+      console.error('MAL OAuth state mismatch or missing code_verifier — aborting login.');
+      return;
+    }
+
+    try {
+      const auth = await exchangeMalCode(code, verifier);
+      saveMalAuth(auth);
+      updateMalAuthUI();
+      await importMalList();
+    } catch (err) {
+      console.error('MAL login failed:', err);
+    }
+  }
+
+  els.malConnectBtn.addEventListener('click', startMalLogin);
+  els.malDisconnectBtn.addEventListener('click', () => {
+    clearMalAuth();
+    updateMalAuthUI();
+  });
+
+  // ---------- Main flow ----------
+  async function fetchRandomAnimeBatch(attemptsLeft) {
+    if (attemptsLeft === undefined) attemptsLeft = 3;
+    const randomPage = Math.floor(Math.random() * ANILIST_MAX_PAGE) + 1;
+    const json = await fetchWithRetry(ANILIST_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({
+        query: ANILIST_QUERY,
+        variables: { page: randomPage, perPage: 25, id_not_in: getSeenIds() }
+      })
+    });
+
+    const media = json && json.data && json.data.Page && json.data.Page.media;
+    if (!media || !media.length) {
+      if (attemptsLeft > 0) return fetchRandomAnimeBatch(attemptsLeft - 1);
+      throw new Error('AniList returned no results after several attempts.');
+    }
+    return media;
+  }
+
+  async function surpriseMe() {
+    if (isFetching) return;
+    isFetching = true;
+    els.surpriseBtn.disabled = true;
+
+    randomizeChannel();
+    showTuning();
+    els.tv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    const tuningDelay = sleep(650);
+
+    try {
+      const biasedVariables = applyWatchlistGenreBias({});
+      let anime;
+      if (biasedVariables.genre_in) {
+        const media = await fetchRandomAnimeFromFilter({ variables: biasedVariables });
+        anime = normalizeAnime(media);
+      } else {
+        const media = await fetchRandomAnimeBatch();
+        const pick = weightedRandomPick(media);
+        anime = normalizeAnime(pick);
+      }
+
+      await tuningDelay;
+      stopTuning();
+      renderResult(anime);
+    } catch (err) {
+      console.error('Surprise Me failed:', err);
+      await tuningDelay;
+      stopTuning();
+      showError(err);
+    } finally {
+      isFetching = false;
+      els.surpriseBtn.disabled = false;
+    }
+  }
+
+  els.surpriseBtn.addEventListener('click', surpriseMe);
+  els.saveBtn.addEventListener('click', () => {
+    if (!currentAnime) return;
+    if (isSaved(currentAnime.id)) {
+      removeFromWatchlist(currentAnime.id);
+    } else {
+      addToWatchlist(currentAnime);
+    }
+    updateSaveButton();
+  });
+  els.seenBtn.addEventListener('click', () => {
+    if (!currentAnime) return;
+    if (isSeen(currentAnime.id)) {
+      removeFromSeen(currentAnime.id);
+    } else {
+      addToSeen(currentAnime);
+    }
+    updateSeenButton();
+  });
+
+  // ---------- Browse (genre / category) ----------
+  let browseState = null; // { mode, key, label, variables, page, hasNextPage, loading }
+
+  function browseCardTitle(anime) {
+    return anime.titleEnglish || anime.titleRomaji || 'Untitled';
+  }
+
+  function renderBrowseCard(anime) {
+    const card = document.createElement('div');
+    card.className = 'browse-card';
+
+    const poster = document.createElement('img');
+    poster.className = 'browse-card-poster';
+    poster.src = anime.poster;
+    poster.alt = browseCardTitle(anime) + ' poster';
+    card.appendChild(poster);
+
+    const body = document.createElement('div');
+    body.className = 'browse-card-body';
+
+    const detailUrl = anime.idMal ? 'https://myanimelist.net/anime/' + anime.idMal : anime.siteUrl;
+    const link = document.createElement('a');
+    link.className = 'browse-card-title';
+    link.href = detailUrl;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.textContent = browseCardTitle(anime);
+    body.appendChild(link);
+
+    const metaParts = [];
+    if (anime.score) metaParts.push('★ ' + anime.score.toFixed(1));
+    if (anime.format) metaParts.push(anime.format);
+    if (anime.year) metaParts.push(String(anime.year));
+    const meta = document.createElement('p');
+    meta.className = 'browse-card-meta';
+    meta.textContent = metaParts.join(' · ');
+    body.appendChild(meta);
+
+    const genreWrap = document.createElement('div');
+    genreWrap.className = 'browse-card-genres';
+    (anime.genres || []).slice(0, 3).forEach((g) => {
+      const pill = document.createElement('span');
+      pill.className = 'genre-pill';
+      pill.textContent = g;
+      genreWrap.appendChild(pill);
+    });
+    body.appendChild(genreWrap);
+
+    const saveBtn = document.createElement('button');
+    saveBtn.className = 'browse-card-save';
+    saveBtn.type = 'button';
+    const syncSaveBtn = () => {
+      const saved = isSaved(anime.id);
+      saveBtn.textContent = saved ? '✓ Saved' : '＋ Save';
+      saveBtn.classList.toggle('saved', saved);
+    };
+    syncSaveBtn();
+    saveBtn.addEventListener('click', () => {
+      if (isSaved(anime.id)) {
+        removeFromWatchlist(anime.id);
+      } else {
+        addToWatchlist(anime);
+      }
+      syncSaveBtn();
+      if (currentAnime && currentAnime.id === anime.id) updateSaveButton();
+    });
+
+    const seenBtn = document.createElement('button');
+    seenBtn.className = 'browse-card-save';
+    seenBtn.type = 'button';
+    const syncSeenBtn = () => {
+      const seen = isSeen(anime.id);
+      seenBtn.textContent = seen ? '✓ Seen' : '👁 Seen';
+      seenBtn.classList.toggle('seen', seen);
+    };
+    syncSeenBtn();
+    seenBtn.addEventListener('click', () => {
+      if (isSeen(anime.id)) {
+        removeFromSeen(anime.id);
+      } else {
+        addToSeen(anime);
+      }
+      syncSeenBtn();
+      if (currentAnime && currentAnime.id === anime.id) updateSeenButton();
+    });
+
+    const actionRow = document.createElement('div');
+    actionRow.className = 'browse-card-actions';
+    actionRow.appendChild(saveBtn);
+    actionRow.appendChild(seenBtn);
+    body.appendChild(actionRow);
+
+    card.appendChild(body);
+    return card;
+  }
+
+  // ---------- Plot/description search (client-side keyword matching, no LLM) ----------
+  const SEARCH_STOPWORDS = new Set([
+    'a', 'an', 'the', 'and', 'or', 'of', 'in', 'on', 'at', 'to', 'who', 'whose', 'that', 'which',
+    'with', 'is', 'are', 'was', 'were', 'be', 'been', 'his', 'her', 'their', 'they', 'he', 'she',
+    'it', 'its', 'for', 'about', 'after', 'before', 'when', 'where', 'while', 'as', 'by', 'from',
+    'into', 'story', 'anime', 'plot', 'this', 'has', 'have', 'had', 'but', 'not', 'you', 'your',
+    'name', 'named', 'people', 'person'
+  ]);
+
+  // Crude suffix-stripping so "kills"/"killing"/"killed" all normalize to the
+  // same token — not real stemming, but enough to catch common word forms
+  // without needing an actual NLP library.
+  function stemToken(word) {
+    if (word.length > 6 && word.endsWith('ing')) return word.slice(0, -3);
+    if (word.length > 5 && word.endsWith('ed')) return word.slice(0, -2);
+    if (word.length > 5 && word.endsWith('es')) return word.slice(0, -2);
+    if (word.length > 4 && word.endsWith('s') && !word.endsWith('ss')) return word.slice(0, -1);
+    return word;
+  }
+
+  function tokenize(text) {
+    const words = (text || '').toLowerCase().match(/[a-z0-9]+/g) || [];
+    return words.map(stemToken);
+  }
+
+  function extractQueryKeywords(query) {
+    return Array.from(new Set(tokenize(query).filter((w) => w.length > 2 && !SEARCH_STOPWORDS.has(w))));
+  }
+
+  function mediaTokenSet(media) {
+    const title = media.title || {};
+    return new Set(tokenize(cleanSynopsisText(media.description) + ' ' + (title.romaji || '') + ' ' + (title.english || '')));
+  }
+
+  function scoreMediaByKeywords(media, keywords, weights) {
+    if (!keywords.length) return 0;
+    const haystack = mediaTokenSet(media);
+    let score = 0;
+    keywords.forEach((kw) => {
+      if (haystack.has(kw)) score += weights ? weights[kw] : 1;
+    });
+    return score;
+  }
+
+  // TF-IDF-style weighting so a rare, distinctive word (e.g. "notebook") counts
+  // for more than a word that shows up in most anime synopses (e.g. "people"),
+  // measured against how often each keyword appears across the search corpus.
+  function computeKeywordWeights(corpus, keywords) {
+    const docFreq = {};
+    keywords.forEach((kw) => {
+      docFreq[kw] = 0;
+    });
+    corpus.forEach((media) => {
+      const haystack = mediaTokenSet(media);
+      keywords.forEach((kw) => {
+        if (haystack.has(kw)) docFreq[kw] += 1;
+      });
+    });
+    const n = corpus.length || 1;
+    const weights = {};
+    keywords.forEach((kw) => {
+      weights[kw] = Math.log((n + 1) / (docFreq[kw] + 1)) + 1;
+    });
+    return weights;
+  }
+
+  let descriptionSearchCorpusPromise = null;
+
+  // Lazily fetches a corpus of popular anime (with descriptions) once per page
+  // session, reused across every plot/description search from then on.
+  async function getDescriptionSearchCorpus() {
+    if (!descriptionSearchCorpusPromise) {
+      descriptionSearchCorpusPromise = (async () => {
+        const corpus = [];
+        for (let page = 1; page <= 8; page++) {
+          const json = await fetchWithRetry(ANILIST_ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+            body: JSON.stringify({
+              query: ANILIST_BROWSE_QUERY,
+              variables: { page: page, perPage: 50, sort: ['POPULARITY_DESC'] }
+            })
+          });
+          const media = (json && json.data && json.data.Page && json.data.Page.media) || [];
+          if (!media.length) break;
+          corpus.push.apply(corpus, media);
+        }
+        return corpus;
+      })();
+    }
+    return descriptionSearchCorpusPromise;
+  }
+
+  // Combines AniList's title search with client-side keyword matching against
+  // a corpus of popular anime descriptions, so a plot summary ("boy loses his
+  // memory and time-travels") can surface matches, not just exact titles.
+  async function loadSearchResults(query) {
+    const titleJson = await fetchWithRetry(ANILIST_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({
+        query: ANILIST_BROWSE_QUERY,
+        variables: { page: 1, perPage: 25, search: query }
+      })
+    });
+    const titleMatches = (titleJson && titleJson.data && titleJson.data.Page && titleJson.data.Page.media) || [];
+
+    const keywords = extractQueryKeywords(query);
+    const corpus = keywords.length ? await getDescriptionSearchCorpus() : [];
+    const weights = keywords.length ? computeKeywordWeights(corpus, keywords) : null;
+
+    // Rank everything on one shared scale instead of always putting AniList's
+    // (often loosely fuzzy) title matches ahead of strong description matches:
+    // a title match's rank contributes a bonus based on how high AniList placed
+    // it, and description keyword overlap (IDF-weighted) adds on top of that.
+    const byId = new Map();
+    titleMatches.forEach((media, index) => {
+      byId.set(media.id, { media: media, titleRank: index });
+    });
+    corpus.forEach((media) => {
+      if (!byId.has(media.id)) byId.set(media.id, { media: media, titleRank: -1 });
+    });
+
+    const ranked = Array.from(byId.values()).map((entry) => {
+      const descScore = scoreMediaByKeywords(entry.media, keywords, weights);
+      const titleBonus = entry.titleRank >= 0 ? titleMatches.length - entry.titleRank : 0;
+      return { media: entry.media, rank: descScore * 3 + titleBonus };
+    });
+
+    return ranked
+      .filter((entry) => entry.rank > 0)
+      .sort((a, b) => b.rank - a.rank)
+      .map((entry) => entry.media);
+  }
+
+  async function fetchBrowseBatch(variables, page) {
+    const json = await fetchWithRetry(ANILIST_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({
+        query: ANILIST_BROWSE_QUERY,
+        variables: Object.assign({ page: page, perPage: BROWSE_PER_PAGE, sort: ['POPULARITY_DESC'] }, variables)
+      })
+    });
+    const pageData = json && json.data && json.data.Page;
+    return {
+      media: (pageData && pageData.media) || [],
+      hasNextPage: !!(pageData && pageData.pageInfo && pageData.pageInfo.hasNextPage)
+    };
+  }
+
+  async function loadBrowsePage() {
+    const state = browseState;
+    if (!state || state.loading) return;
+    state.loading = true;
+    els.loadMoreBtn.disabled = true;
+    els.browseStatus.hidden = false;
+    els.browseStatus.textContent = state.page === 1 ? 'Tuning in…' : 'Loading more…';
+
+    try {
+      let media, hasNextPage;
+      if (state.mode === 'search') {
+        if (!state.searchResults) {
+          state.searchResults = await loadSearchResults(state.key);
+        }
+        if (browseState !== state) return; // user navigated away while this was loading
+        const start = (state.page - 1) * BROWSE_PER_PAGE;
+        media = state.searchResults.slice(start, start + BROWSE_PER_PAGE);
+        hasNextPage = start + BROWSE_PER_PAGE < state.searchResults.length;
+      } else {
+        const result = await fetchBrowseBatch(state.variables, state.page);
+        if (browseState !== state) return; // user navigated away while this was loading
+        media = result.media;
+        hasNextPage = result.hasNextPage;
+      }
+      const animeList = media.map(normalizeAnime);
+
+      if (state.page === 1 && !animeList.length) {
+        els.browseStatus.hidden = false;
+        els.browseStatus.textContent =
+          state.mode === 'search'
+            ? 'No matches found — try different words from the title or plot.'
+            : 'No results found for this category.';
+      } else {
+        els.browseStatus.hidden = true;
+      }
+
+      animeList.forEach((anime) => els.browseGrid.appendChild(renderBrowseCard(anime)));
+
+      state.hasNextPage = hasNextPage;
+      state.page += 1;
+      els.loadMoreBtn.hidden = !hasNextPage;
+    } catch (err) {
+      console.error('Browse fetch failed:', err);
+      if (browseState === state) {
+        els.browseStatus.hidden = false;
+        els.browseStatus.textContent = errorMessageFor(err);
+        els.loadMoreBtn.hidden = state.page === 1;
+      }
+    } finally {
+      state.loading = false;
+      els.loadMoreBtn.disabled = false;
+    }
+  }
+
+  // ---------- Spotlight (random pick scoped to current filter) ----------
+  // AniList's own docs warn that pageInfo.total/lastPage are not accurate and
+  // recommend not relying on them (https://docs.anilist.co/guide/graphql/pagination).
+  // In practice filtered queries (genre_in, tag_in, etc.) often just report the
+  // theoretical max page allowed by the 5000-result depth cap rather than the
+  // true count, so we binary-search for the real last page that still has data.
+  async function pageHasMedia(variables, page) {
+    // Must probe with the same perPage used for the real fetch — page numbers
+    // aren't comparable across different perPage values.
+    const json = await fetchWithRetry(ANILIST_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({
+        query: ANILIST_BROWSE_QUERY,
+        variables: Object.assign({ page: page, perPage: BROWSE_PER_PAGE }, variables)
+      })
+    });
+    const media = json && json.data && json.data.Page && json.data.Page.media;
+    return !!(media && media.length);
+  }
+
+  async function findLastPageWithData(variables) {
+    const depthCapPage = Math.floor(5000 / BROWSE_PER_PAGE);
+    if (await pageHasMedia(variables, depthCapPage)) return depthCapPage;
+
+    let lo = 1;
+    let hi = depthCapPage;
+    if (!(await pageHasMedia(variables, lo))) {
+      throw new Error('No results found for this filter.');
+    }
+    while (lo < hi) {
+      const mid = Math.ceil((lo + hi) / 2);
+      if (await pageHasMedia(variables, mid)) {
+        lo = mid;
+      } else {
+        hi = mid - 1;
+      }
+    }
+    return lo;
+  }
+
+  async function fetchRandomAnimeFromFilter(state, attemptsLeft) {
+    if (attemptsLeft === undefined) attemptsLeft = 4;
+    const variables = Object.assign({}, state.variables, { id_not_in: getSeenIds() });
+
+    if (variables.search) {
+      // Reuse the already-loaded title + description matches for this search
+      // rather than a separate fetch; deep pagination is meaningless for fuzzy
+      // relevance ranking anyway, so just weighted-pick among the matches.
+      const pool = state.searchResults || (await loadSearchResults(variables.search));
+      const seenIds = new Set(getSeenIds());
+      const unseenPool = pool.filter((m) => !seenIds.has(m.id));
+      const candidates = unseenPool.length ? unseenPool : pool;
+      if (!candidates.length) {
+        throw new Error('No results found for this search.');
+      }
+      return weightedRandomPick(candidates);
+    }
+
+    if (!state.randomLastPage) {
+      state.randomLastPage = await findLastPageWithData(variables);
+    }
+    const randomPage = Math.floor(Math.random() * state.randomLastPage) + 1;
+
+    const json = await fetchWithRetry(ANILIST_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({
+        query: ANILIST_BROWSE_QUERY,
+        variables: Object.assign({ page: randomPage, perPage: BROWSE_PER_PAGE }, variables)
+      })
+    });
+    const media = json && json.data && json.data.Page && json.data.Page.media;
+    if (!media || !media.length) {
+      if (attemptsLeft > 0) return fetchRandomAnimeFromFilter(state, attemptsLeft - 1);
+      throw new Error('AniList returned no results after several attempts.');
+    }
+    return weightedRandomPick(media);
+  }
+
+  function hideSpotlight() {
+    els.spotlightCard.hidden = true;
+    els.spotlightBody.hidden = true;
+    els.spotlightStatus.hidden = true;
+    spotlightAnime = null;
+  }
+
+  function renderSpotlight(anime) {
+    spotlightAnime = anime;
+
+    els.spotlightPoster.src = anime.poster;
+    els.spotlightPoster.alt = (anime.titleEnglish || anime.titleRomaji || 'Anime poster') + ' poster';
+
+    els.spotlightTitleJp.textContent = anime.titleNative || '';
+    els.spotlightTitleJp.hidden = !anime.titleNative;
+    els.spotlightTitleMain.textContent = anime.titleEnglish || anime.titleRomaji || 'Untitled';
+
+    els.spotlightScore.textContent = anime.score ? '★ ' + anime.score.toFixed(1) : '★ —';
+
+    const metaParts = [];
+    if (anime.format) metaParts.push(anime.format);
+    if (anime.episodes) metaParts.push(anime.episodes + ' ep');
+    if (anime.year) metaParts.push(String(anime.year));
+    els.spotlightMeta.textContent = metaParts.join(' · ');
+
+    clearChildren(els.spotlightGenres);
+    (anime.genres || []).slice(0, 4).forEach((g) => {
+      const pill = document.createElement('span');
+      pill.className = 'genre-pill';
+      pill.textContent = g;
+      els.spotlightGenres.appendChild(pill);
+    });
+
+    els.spotlightSynopsis.textContent = truncateSynopsis(anime.synopsis);
+    renderWatchLinks(anime, els.spotlightWatchLinks);
+    syncSpotlightSaveButton();
+    syncSpotlightSeenButton();
+
+    els.spotlightStatus.hidden = true;
+    els.spotlightBody.hidden = false;
+  }
+
+  function syncSpotlightSaveButton() {
+    if (!spotlightAnime) return;
+    const saved = isSaved(spotlightAnime.id);
+    els.spotlightSaveBtn.textContent = saved ? '✓ Saved' : '＋ Save to Watchlist';
+    els.spotlightSaveBtn.classList.toggle('saved', saved);
+  }
+
+  function syncSpotlightSeenButton() {
+    if (!spotlightAnime) return;
+    const seen = isSeen(spotlightAnime.id);
+    els.spotlightSeenBtn.textContent = seen ? '✓ Seen' : '👁 Mark as Seen';
+    els.spotlightSeenBtn.classList.toggle('seen', seen);
+  }
+
+  async function pickRandomFromCurrentFilter() {
+    if (!browseState) return;
+    els.browseRandomBtn.disabled = true;
+    els.spotlightAnotherBtn.disabled = true;
+    els.spotlightCard.hidden = false;
+    els.spotlightBody.hidden = true;
+    els.spotlightStatus.hidden = false;
+    els.spotlightStatus.textContent = 'Tuning in…';
+
+    try {
+      const biasedVariables = applyWatchlistGenreBias(browseState.variables);
+      const fetchState = biasedVariables === browseState.variables ? browseState : { variables: biasedVariables };
+      const media = await fetchRandomAnimeFromFilter(fetchState);
+      renderSpotlight(normalizeAnime(media));
+    } catch (err) {
+      console.error('Random pick failed:', err);
+      els.spotlightStatus.hidden = false;
+      els.spotlightStatus.textContent = errorMessageFor(err);
+    } finally {
+      els.browseRandomBtn.disabled = false;
+      els.spotlightAnotherBtn.disabled = false;
+    }
+  }
+
+  function showBrowseView(mode, key) {
+    let label, variables;
+    if (mode === 'genre') {
+      label = GENRE_DISPLAY_NAMES[key] || key;
+      variables = { genre_in: [key], sort: ['SCORE_DESC'] };
+    } else if (mode === 'search') {
+      label = 'Search: "' + key + '"';
+      variables = { search: key, sort: null };
+    } else {
+      const def = CATEGORY_DEFS[key];
+      if (!def) {
+        navigateHome();
+        return;
+      }
+      label = def.label;
+      variables = def.variables;
+    }
+
+    els.homeView.hidden = true;
+    els.seenView.hidden = true;
+    els.genreHubView.hidden = true;
+    els.browseView.hidden = false;
+    els.browseTitle.textContent = label;
+    clearChildren(els.browseGrid);
+    els.browseStatus.hidden = true;
+    els.loadMoreBtn.hidden = true;
+    hideSpotlight();
+    els.searchInput.value = mode === 'search' ? key : '';
+
+    browseState = { mode: mode, key: key, variables: variables, page: 1, hasNextPage: false, loading: false };
+    updateNavActiveState();
+    loadBrowsePage();
+  }
+
+  function showHomeView() {
+    browseState = null;
+    els.browseView.hidden = true;
+    els.seenView.hidden = true;
+    els.genreHubView.hidden = true;
+    els.homeView.hidden = false;
+    updateNavActiveState();
+  }
+
+  function showSeenPage() {
+    browseState = null;
+    els.homeView.hidden = true;
+    els.browseView.hidden = true;
+    els.genreHubView.hidden = true;
+    els.seenView.hidden = false;
+    updateNavActiveState();
+    renderSeenPage();
+  }
+
+  function showGenreHubPage() {
+    browseState = null;
+    els.homeView.hidden = true;
+    els.browseView.hidden = true;
+    els.seenView.hidden = true;
+    els.genreHubView.hidden = false;
+    updateNavActiveState();
+  }
+
+  function updateNavActiveState() {
+    const currentRoute = location.hash.replace(/^#\/?/, '') || 'home';
+    const links = document.querySelectorAll('.nav-link');
+    links.forEach((link) => {
+      link.classList.toggle('active', link.dataset.route === currentRoute);
+    });
+  }
+
+  function navigateHome() {
+    location.hash = '#/';
+  }
+
+  function handleRoute() {
+    hideSearchSuggestions();
+    const hash = location.hash.replace(/^#\/?/, '');
+    if (!hash) {
+      showHomeView();
+      return;
+    }
+    const parts = hash.split('/');
+    if (parts[0] === 'genre' && parts[1]) {
+      showBrowseView('genre', decodeURIComponent(parts[1]));
+    } else if (parts[0] === 'category' && parts[1] && CATEGORY_DEFS[parts[1]]) {
+      showBrowseView('category', parts[1]);
+    } else if (parts[0] === 'search' && parts[1]) {
+      showBrowseView('search', decodeURIComponent(parts[1]));
+    } else if (parts[0] === 'seen') {
+      showSeenPage();
+    } else if (parts[0] === 'genres') {
+      showGenreHubPage();
+    } else {
+      navigateHome();
+    }
+  }
+
+  els.eyebrow.addEventListener('click', () => {
+    if (currentGenreKey) location.hash = '#/genre/' + encodeURIComponent(currentGenreKey);
+  });
+
+  els.browseBack.addEventListener('click', navigateHome);
+  els.seenBack.addEventListener('click', navigateHome);
+  els.genreHubBack.addEventListener('click', navigateHome);
+
+  els.loadMoreBtn.addEventListener('click', loadBrowsePage);
+
+  els.browseRandomBtn.addEventListener('click', pickRandomFromCurrentFilter);
+  els.spotlightAnotherBtn.addEventListener('click', pickRandomFromCurrentFilter);
+  els.spotlightClose.addEventListener('click', hideSpotlight);
+  els.spotlightSaveBtn.addEventListener('click', () => {
+    if (!spotlightAnime) return;
+    if (isSaved(spotlightAnime.id)) {
+      removeFromWatchlist(spotlightAnime.id);
+    } else {
+      addToWatchlist(spotlightAnime);
+    }
+    syncSpotlightSaveButton();
+    if (currentAnime && currentAnime.id === spotlightAnime.id) updateSaveButton();
+  });
+  els.spotlightSeenBtn.addEventListener('click', () => {
+    if (!spotlightAnime) return;
+    if (isSeen(spotlightAnime.id)) {
+      removeFromSeen(spotlightAnime.id);
+    } else {
+      addToSeen(spotlightAnime);
+    }
+    syncSpotlightSeenButton();
+    if (currentAnime && currentAnime.id === spotlightAnime.id) updateSeenButton();
+  });
+
+  els.searchForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    hideSearchSuggestions();
+    const query = els.searchInput.value.trim();
+    if (!query) return;
+    const newHash = '#/search/' + encodeURIComponent(query);
+    if (location.hash === newHash) {
+      showBrowseView('search', query);
+    } else {
+      location.hash = newHash;
+    }
+  });
+
+  function hideSearchSuggestions() {
+    els.searchSuggestions.hidden = true;
+    els.searchInput.setAttribute('aria-expanded', 'false');
+  }
+
+  function updateSearchSuggestions() {
+    const query = els.searchInput.value.trim().toLowerCase();
+    clearChildren(els.searchSuggestions);
+    if (!query) {
+      hideSearchSuggestions();
+      return;
+    }
+    const matches = TAB_SUGGESTIONS.filter((tab) => tab.label.toLowerCase().includes(query)).slice(0, 6);
+    if (!matches.length) {
+      hideSearchSuggestions();
+      return;
+    }
+    matches.forEach((tab) => {
+      const item = document.createElement('a');
+      item.className = 'search-suggestion';
+      item.href = tab.hash;
+      item.setAttribute('role', 'option');
+      item.textContent = '🏷 ' + tab.label;
+      item.addEventListener('click', hideSearchSuggestions);
+      els.searchSuggestions.appendChild(item);
+    });
+    els.searchSuggestions.hidden = false;
+    els.searchInput.setAttribute('aria-expanded', 'true');
+  }
+
+  els.searchInput.addEventListener('input', updateSearchSuggestions);
+  els.searchInput.addEventListener('focus', updateSearchSuggestions);
+  els.searchInput.addEventListener('blur', () => {
+    setTimeout(hideSearchSuggestions, 150);
+  });
+
+  window.addEventListener('hashchange', handleRoute);
+
+  showIdle();
+  renderWatchlistShelf();
+  handleRoute();
+  updateMalAuthUI();
+  handleMalRedirect();
+})();
+</script>
+</body>
+</html>
