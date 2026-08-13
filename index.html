@@ -229,16 +229,32 @@
     padding: 7px 8px 7px 14px;
   }
 
-  .mal-disconnect-btn {
+  .mal-disconnect-btn, .mal-resync-btn {
     width: 20px;
     height: 20px;
     border-radius: 50%;
     border: none;
     background: rgba(255, 255, 255, 0.08);
     color: var(--text);
-    font-size: 0.85rem;
+    font-size: 0.75rem;
     line-height: 1;
     cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .mal-resync-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .mal-resync-btn.spinning {
+    animation: mal-resync-spin 0.8s linear infinite;
+  }
+
+  @keyframes mal-resync-spin {
+    to { transform: rotate(360deg); }
   }
 
   .mal-disconnect-btn:hover, .mal-disconnect-btn:focus-visible {
@@ -1027,6 +1043,7 @@
       <button class="nav-link" id="malConnectBtn" type="button">🔗 Connect MyAnimeList</button>
       <span class="mal-connected-badge" id="malConnectedBadge" hidden>
         ✓ MyAnimeList Connected
+        <button class="mal-resync-btn" id="malResyncBtn" type="button" aria-label="Resync MyAnimeList">🔄</button>
         <button class="mal-disconnect-btn" id="malDisconnectBtn" type="button" aria-label="Disconnect MyAnimeList">×</button>
       </span>
       <p class="mal-sync-status" id="malSyncStatus" hidden></p>
@@ -1405,6 +1422,7 @@
     malConnectBtn: document.getElementById('malConnectBtn'),
     malConnectedBadge: document.getElementById('malConnectedBadge'),
     malDisconnectBtn: document.getElementById('malDisconnectBtn'),
+    malResyncBtn: document.getElementById('malResyncBtn'),
     malSyncStatus: document.getElementById('malSyncStatus'),
     searchInput: document.getElementById('searchInput'),
     browseRandomBtn: document.getElementById('browseRandomBtn'),
@@ -2083,6 +2101,8 @@
 
     els.malSyncStatus.hidden = false;
     els.malSyncStatus.textContent = 'Syncing your MyAnimeList…';
+    els.malResyncBtn.disabled = true;
+    els.malResyncBtn.classList.add('spinning');
 
     try {
       const res = await fetch('/api/mal/list', {
@@ -2118,6 +2138,10 @@
             importedCount++;
           }
         } else if (MAL_SEEN_STATUSES.indexOf(status) !== -1) {
+          // Reconcile status progress on resync (e.g. plan_to_watch -> completed)
+          // by moving it out of the watchlist instead of leaving a stale copy.
+          const watchlistIndex = watchlist.findIndex((item) => item.id === anime.id);
+          if (watchlistIndex !== -1) watchlist.splice(watchlistIndex, 1);
           if (!seen.some((item) => item.id === anime.id)) {
             seen.push(record);
             importedCount++;
@@ -2135,6 +2159,9 @@
       console.error('MAL list import failed:', err);
       els.malSyncStatus.hidden = false;
       els.malSyncStatus.textContent = 'Could not sync your MyAnimeList — open the console for details.';
+    } finally {
+      els.malResyncBtn.disabled = false;
+      els.malResyncBtn.classList.remove('spinning');
     }
   }
 
@@ -2169,6 +2196,9 @@
   els.malDisconnectBtn.addEventListener('click', () => {
     clearMalAuth();
     updateMalAuthUI();
+  });
+  els.malResyncBtn.addEventListener('click', () => {
+    importMalList();
   });
 
   // ---------- Main flow ----------
