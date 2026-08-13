@@ -1207,6 +1207,13 @@
         <button class="back-link" id="seenBack" type="button">← Back</button>
         <h2 class="browse-title">Already Seen</h2>
       </div>
+      <nav class="category-nav" id="seenFilterNav" aria-label="Filter by MyAnimeList status">
+        <button class="nav-link active" type="button" data-status="all">All</button>
+        <button class="nav-link" type="button" data-status="watching">▶️ Watching</button>
+        <button class="nav-link" type="button" data-status="completed">✅ Completed</button>
+        <button class="nav-link" type="button" data-status="on_hold">⏸ On Hold</button>
+        <button class="nav-link" type="button" data-status="dropped">❌ Dropped</button>
+      </nav>
       <p class="browse-status" id="seenEmpty" hidden>You haven't marked anything as seen yet.</p>
       <div class="browse-grid" id="seenGrid"></div>
     </section>
@@ -1404,6 +1411,7 @@
     seenBack: document.getElementById('seenBack'),
     seenGrid: document.getElementById('seenGrid'),
     seenEmpty: document.getElementById('seenEmpty'),
+    seenFilterNav: document.getElementById('seenFilterNav'),
     surpriseBtn: document.getElementById('surpriseBtn'),
     tapeRow: document.getElementById('tapeRow'),
     shelfEmpty: document.getElementById('shelfEmpty'),
@@ -1448,6 +1456,7 @@
   let isFetching = false;
   let currentAnime = null;
   let currentGenreKey = null;
+  let seenFilter = 'all';
 
   function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -1895,12 +1904,16 @@
   }
 
   function renderSeenPage() {
-    const list = loadSeenList();
+    const fullList = loadSeenList();
+    const list = seenFilter === 'all' ? fullList : fullList.filter((item) => item.malStatus === seenFilter);
     clearChildren(els.seenGrid);
 
     if (!list.length) {
       els.seenEmpty.hidden = false;
       els.seenGrid.hidden = true;
+      els.seenEmpty.textContent = fullList.length
+        ? 'Nothing with that status yet.'
+        : "You haven't marked anything as seen yet.";
       return;
     }
 
@@ -2142,9 +2155,16 @@
           // by moving it out of the watchlist instead of leaving a stale copy.
           const watchlistIndex = watchlist.findIndex((item) => item.id === anime.id);
           if (watchlistIndex !== -1) watchlist.splice(watchlistIndex, 1);
-          if (!seen.some((item) => item.id === anime.id)) {
+
+          record.malStatus = status;
+          const seenIndex = seen.findIndex((item) => item.id === anime.id);
+          if (seenIndex === -1) {
             seen.push(record);
             importedCount++;
+          } else if (seen[seenIndex].malStatus !== status) {
+            // Status changed since the last sync (e.g. watching -> completed) —
+            // update the stored record instead of leaving it stale.
+            seen[seenIndex] = record;
           }
         }
       });
@@ -2790,6 +2810,10 @@
     els.genreHubView.hidden = true;
     els.seenView.hidden = false;
     updateNavActiveState();
+    seenFilter = 'all';
+    els.seenFilterNav.querySelectorAll('.nav-link').forEach((btn) => {
+      btn.classList.toggle('active', btn.dataset.status === 'all');
+    });
     renderSeenPage();
   }
 
@@ -2844,6 +2868,15 @@
   els.browseBack.addEventListener('click', navigateHome);
   els.seenBack.addEventListener('click', navigateHome);
   els.genreHubBack.addEventListener('click', navigateHome);
+  els.seenFilterNav.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-status]');
+    if (!btn) return;
+    seenFilter = btn.dataset.status;
+    els.seenFilterNav.querySelectorAll('.nav-link').forEach((b) => {
+      b.classList.toggle('active', b === btn);
+    });
+    renderSeenPage();
+  });
 
   els.loadMoreBtn.addEventListener('click', loadBrowsePage);
 
