@@ -1208,6 +1208,10 @@
       <div class="browse-header">
         <button class="back-link" id="browseBack" type="button">← Back</button>
         <h2 class="browse-title" id="browseTitle">Browse</h2>
+        <label class="higher-rated-toggle" for="browseHigherRatedCheckbox">
+          <input type="checkbox" id="browseHigherRatedCheckbox">
+          Higher Rated
+        </label>
         <button class="random-pick-btn" id="browseRandomBtn" type="button">🎲 Random Pick</button>
       </div>
 
@@ -1455,6 +1459,7 @@
     seenFilterNav: document.getElementById('seenFilterNav'),
     surpriseBtn: document.getElementById('surpriseBtn'),
     higherRatedCheckbox: document.getElementById('higherRatedCheckbox'),
+    browseHigherRatedCheckbox: document.getElementById('browseHigherRatedCheckbox'),
     tapeRow: document.getElementById('tapeRow'),
     shelfEmpty: document.getElementById('shelfEmpty'),
     categoryNav: document.getElementById('categoryNav'),
@@ -2298,7 +2303,9 @@
     try {
       const baseVariables = {};
       if (els.higherRatedCheckbox.checked) {
-        baseVariables.averageScore_greater = 74; // 7.5+ out of 10
+        // AniList's averageScore_greater is inclusive (>=), not strictly >
+        // as the name suggests — confirmed by testing the exact boundary.
+        baseVariables.averageScore_greater = 75; // 7.5+ out of 10
       }
       const biasedVariables = applyWatchlistGenreBias(baseVariables);
       let anime;
@@ -2697,8 +2704,12 @@
       // relevance ranking anyway, so just weighted-pick among the matches.
       const pool = state.searchResults || (await loadSearchResults(variables.search));
       const seenIds = new Set(getSeenIds());
-      const unseenPool = pool.filter((m) => !seenIds.has(m.id));
-      const candidates = unseenPool.length ? unseenPool : pool;
+      let candidates = pool.filter((m) => !seenIds.has(m.id));
+      if (!candidates.length) candidates = pool;
+      if (variables.averageScore_greater) {
+        const highRated = candidates.filter((m) => (m.averageScore || 0) >= variables.averageScore_greater);
+        if (highRated.length) candidates = highRated;
+      }
       if (!candidates.length) {
         throw new Error('No results found for this search.');
       }
@@ -2792,7 +2803,11 @@
     els.spotlightStatus.textContent = 'Tuning in…';
 
     try {
-      const biasedVariables = applyWatchlistGenreBias(browseState.variables);
+      let baseVariables = browseState.variables;
+      if (els.browseHigherRatedCheckbox.checked) {
+        baseVariables = Object.assign({}, baseVariables, { averageScore_greater: 75 });
+      }
+      const biasedVariables = applyWatchlistGenreBias(baseVariables);
       const fetchState = biasedVariables === browseState.variables ? browseState : { variables: biasedVariables };
       const media = await fetchRandomAnimeFromFilter(fetchState);
       renderSpotlight(normalizeAnime(media));
