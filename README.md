@@ -58,6 +58,28 @@ want to get it onto GitHub.
 That's the whole loop this project has been using — see `git log` for real
 examples of commit message style.
 
+### Getting this repo back into Claude on a new device
+
+Claude itself doesn't sync project files or conversation history across
+devices — only what's in GitHub travels. To resume working on AniMania with
+Claude on a different computer:
+
+1. **Install Git** (and Claude Code) on the new device, if not already there.
+2. **Clone the repo:**
+   ```bash
+   git clone https://github.com/brahmank6-hue/AniMania.git
+   ```
+3. **Open Claude Code in that folder** (`cd AniMania`, then start Claude
+   Code there). This will be a brand-new conversation with no memory of past
+   sessions.
+4. **Point Claude at this README** to rebuild context fast — it covers the
+   stack, file map, secrets, localStorage schema, and the API/CSS gotchas
+   discovered so far, so you shouldn't need to re-explain the project from
+   scratch.
+5. **Netlify deploys keep working automatically** — the deploy hook is tied
+   to the GitHub repo, not to the device that pushes, so you don't need to
+   reconnect anything on the new machine for `git push` to go live.
+
 ---
 
 ## 2. Restarting this project — what you need to know
