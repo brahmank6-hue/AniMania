@@ -80,6 +80,58 @@ Claude on a different computer:
    to the GitHub repo, not to the device that pushes, so you don't need to
    reconnect anything on the new machine for `git push` to go live.
 
+### Transferring a repo to a different GitHub account
+
+Two different scenarios, depending on whether you want to *move* the repo
+(same repo, new owner, old location stops working) or *copy* it (a fresh,
+independent repo under the new account, original untouched).
+
+**Option A — Move it (GitHub's built-in transfer, recommended if you own both accounts or the receiving account agrees):**
+
+1. On GitHub, go to the repo → **Settings** → scroll to the **Danger Zone**
+   → **Transfer ownership**.
+2. Type the new owner's GitHub username (or organization name) and confirm
+   with the repo name when prompted.
+3. GitHub emails/notifies the new owner, who must **accept the transfer**
+   before it completes.
+4. Once accepted, the repo lives at `https://github.com/<new-owner>/<repo>`.
+   Stars, issues, wiki, and full commit history all move with it — nothing
+   is lost.
+5. **Update your local clone's remote** so pushes go to the new URL:
+   ```bash
+   git remote set-url origin https://github.com/<new-owner>/<repo>.git
+   ```
+6. **Reconnect Netlify** (or whatever host) to the repo's new location if it
+   was linked by URL — check Netlify's Site settings → Build & deploy →
+   Link to a different repository, since the deploy hook may still point at
+   the old owner/URL.
+7. The old URL (`github.com/<old-owner>/<repo>`) auto-redirects to the new
+   one for a while, but don't rely on that long-term.
+
+**Option B — Copy it (new independent repo, e.g. duplicating into a personal account without touching the original):**
+
+1. **Create a new empty repo** under the target account (no README/license,
+   same as [step 1 above](#getting-a-fresh-project-onto-github-step-by-step)).
+2. **Clone the original repo with full history:**
+   ```bash
+   git clone https://github.com/<old-owner>/<repo>.git
+   cd <repo>
+   ```
+3. **Point it at the new repo instead:**
+   ```bash
+   git remote set-url origin https://github.com/<new-owner>/<repo>.git
+   ```
+4. **Push everything** — all branches and tags, not just `main`:
+   ```bash
+   git push -u origin --all
+   git push origin --tags
+   ```
+5. The new account now has an independent copy with full commit history.
+   Issues, PRs, and stars do **not** carry over with this method (GitHub
+   doesn't expose those over `git`) — only Option A preserves those.
+6. If you also want to redeploy from the new repo, connect Netlify to it the
+   same way as Option A step 6.
+
 ---
 
 ## 2. Restarting this project — what you need to know
